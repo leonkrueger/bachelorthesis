@@ -1,7 +1,7 @@
 class SQLHandler:
     def __init__(self, conn) -> None:
         self.conn = conn
-        
+
     def execute_query(
         self, query: str, params: tuple[str, ...] = ()
     ) -> tuple[list[tuple[str | int | float, ...]], int]:
