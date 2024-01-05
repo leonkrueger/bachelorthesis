@@ -8,7 +8,7 @@ class UnexpectedTokenException(Exception):
         self.actual_token = actual_token
 
 
-def parse_insert_query(query: str) -> dict[str, str | list[str]]:
+def parse_insert_query(query: str) -> dict[str, str | list[str] | list[list[str]]]:
     # Parses INSERT-queries and extracts the table, columns and values if present
     # Parameter query needs to be lowercase
     # TODO: '$' in table/column name doesn't work
@@ -21,17 +21,17 @@ def parse_insert_query(query: str) -> dict[str, str | list[str]]:
     tokens = [
         token.string for token in tokenize.generate_tokens(io.StringIO(query).readline)
     ]
-    if tokens[0].lower() != "insert":
+    if tokens[0].upper() != "INSERT":
         raise UnexpectedTokenException("INSERT", tokens[0])
-    if tokens[1].lower() != "into":
+    if tokens[1].upper() != "INTO":
         raise UnexpectedTokenException("INTO", tokens[1])
 
     index = 2
-    if tokens[index].lower() != "values" and tokens[index] != "(":
+    if tokens[index].upper() != "VALUES" and tokens[index] != "(":
         query_data["table"], index = parse_table(tokens, index)
     if tokens[index] == "(":
         query_data["columns"], index = parse_columns(tokens, index)
-    if tokens[index].lower() != "values":
+    if tokens[index].upper() != "VALUES":
         raise UnexpectedTokenException("VALUES", tokens[index])
     query_data["values"], index = parse_values(tokens, index + 1)
 
