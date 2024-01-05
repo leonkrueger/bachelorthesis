@@ -42,11 +42,7 @@ def map_table_to_database(
 
 def get_fitting_tables(db_tables: list[str], table: str) -> list[str]:
     # Returns all tables whose name fits the specified table.
-    return [
-        db_table
-        for db_table in db_tables
-        if table.lower() in db_table.lower() or db_table.lower() in table.lower()
-    ]
+    return [db_table for db_table in db_tables if table.lower() == db_table.lower()]
 
 
 def map_table_to_database_on_columns(
@@ -94,10 +90,7 @@ def best_fitting_columns(
         for query_column in query_columns:
             column_found = False
             for db_table_column in db_table_columns:
-                if (
-                    query_column[1] in db_table_column[1]
-                    or db_table_column[1] in query_column[1]
-                ):
+                if query_column[1] == db_table_column[1]:
                     columns_found += 1
                     column_mapping[query_column[0]] = db_table_column[0]
                     column_found = True
