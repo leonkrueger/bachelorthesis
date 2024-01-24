@@ -7,8 +7,6 @@ class SQLHandler:
     ) -> tuple[list[tuple[str | int | float, ...]], int]:
         # Executes the query with the given parameters on the database
         # Returns the result of the query and the value of the automatically incremented id
-        # TODO: Remove
-        print(query)
         cursor = self.conn.cursor()
         cursor.execute(query, params)
         output = cursor.fetchall()

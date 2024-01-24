@@ -82,12 +82,20 @@ def parse_values_for_row(tokens: list[str], index: int) -> tuple[list[str], int]
         raise UnexpectedTokenException("(", tokens[index])
 
     values = []
-    values.append(tokens[index + 1])
-    index += 2
-
-    while tokens[index] == ",":
+    if tokens[index + 1] == "-":
+        values.append("-" + tokens[index + 2])
+        index += 3
+    else:
         values.append(tokens[index + 1])
         index += 2
+
+    while tokens[index] == ",":
+        if tokens[index + 1] == "-":
+            values.append("-" + tokens[index + 2])
+            index += 3
+        else:
+            values.append(tokens[index + 1])
+            index += 2
 
     if tokens[index] != ")":
         raise UnexpectedTokenException(")", tokens[index])

@@ -12,8 +12,6 @@ def handle_insert_query(
         query_data, sql_handler
     )
 
-    print(column_mapping)
-
     if create_table:
         # Create database table if it does not already exist
         sql_handler.create_table(
@@ -54,8 +52,8 @@ def get_column_types(values: list[list[str]]) -> list[str]:
 def get_column_type(value: str) -> str:
     # Computes the required column type for the given value
     if value.startswith('"') or value.startswith("'"):
-        return "varchar(255)"
+        return "VARCHAR(255)"
     elif "." in value:
-        return "float"
+        return "DOUBLE"
     else:
-        return "int"
+        return "BIGINT"
