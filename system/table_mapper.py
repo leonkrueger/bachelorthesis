@@ -3,6 +3,7 @@ from typing import Any
 from utils.name_predictor import NamePredictor
 
 from utils.sql_handler import SQLHandler
+from utils.table_origin import TableOrigin
 
 
 MINIMAL_COLUMNS_FOUND_RATIO = 0.4
@@ -22,6 +23,7 @@ def map_table_to_database(
 
         if len(fitting_db_tables) == 0:
             # There is no table that fits the specified name. Thus a new table is created.
+            query_data["table_origin"] = TableOrigin.USER
             return (query_data["table"], {}, True)
         else:
             # There is at least one table that fit the specified name.
@@ -48,6 +50,7 @@ def map_table_to_database(
             predicted_table_name = name_predictor.predict_table_name(
                 query_data["columns"]
             )
+            query_data["table_origin"] = TableOrigin.PREDICTION
             return (predicted_table_name, {}, True)
 
 

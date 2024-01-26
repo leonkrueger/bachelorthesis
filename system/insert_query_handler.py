@@ -1,11 +1,15 @@
 from utils.name_predictor import NamePredictor
-from utils.sql_handler import SQLHandler
 from system.insert_query_parser import parse_insert_query
 from system.table_mapper import map_table_to_database
+from utils.sql_handler import SQLHandler
+from utils.table_manager import TableManager
 
 
 def handle_insert_query(
-    query: str, sql_handler: SQLHandler, name_predictor: NamePredictor
+    query: str,
+    sql_handler: SQLHandler,
+    table_manager: TableManager,
+    name_predictor: NamePredictor,
 ) -> list[tuple[str | int | float, ...]]:
     # Parse the query of the user and collect information needed for execution
     query_data = parse_insert_query(query)
@@ -15,11 +19,7 @@ def handle_insert_query(
 
     if create_table:
         # Create database table if it does not already exist
-        sql_handler.create_table(
-            query_data["table"],
-            query_data["columns"],
-            get_column_types(query_data["values"]),
-        )
+        table_manager.create_table(query_data)
     else:
         # Select correct column names and create not-existing columns
         db_columns = []
@@ -27,10 +27,10 @@ def handle_insert_query(
             if column in column_mapping.keys():
                 db_columns.append(column_mapping[column])
             else:
-                sql_handler.create_column(
+                table_manager.create_column(
                     query_data["table"],
                     column,
-                    get_column_type(query_data["values"][0][column_index]),
+                    [row[column_index] for row in query_data["values"]],
                 )
                 db_columns.append(column)
         query_data["columns"] = db_columns
@@ -43,18 +43,3 @@ def handle_insert_query(
 
     # Execute constructed query
     return sql_handler.execute_query(constructed_query)[0]
-
-
-def get_column_types(values: list[list[str]]) -> list[str]:
-    # Computes the required column types for the given values
-    return [get_column_type(value) for value in values[0]]
-
-
-def get_column_type(value: str) -> str:
-    # Computes the required column type for the given value
-    if value.startswith('"') or value.startswith("'"):
-        return "VARCHAR(255)"
-    elif "." in value:
-        return "DOUBLE"
-    else:
-        return "BIGINT"

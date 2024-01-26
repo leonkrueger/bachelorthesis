@@ -5,6 +5,7 @@ from tabulate import tabulate
 from utils.sql_handler import SQLHandler
 from utils.name_predictor import NamePredictor
 from system.insert_query_handler import handle_insert_query
+from utils.table_manager import TableManager
 
 # Create a database connection
 conn = mysql.connector.connect(
@@ -15,6 +16,7 @@ conn = mysql.connector.connect(
 )
 
 sql_handler = SQLHandler(conn)
+table_manager = TableManager(sql_handler)
 name_predictor = NamePredictor()
 
 # Get user input
@@ -23,7 +25,9 @@ while user_input != "exit":
     try:
         if user_input.lower().startswith("insert"):
             tabulate(
-                handle_insert_query(user_input, sql_handler, name_predictor),
+                handle_insert_query(
+                    user_input, sql_handler, table_manager, name_predictor
+                ),
                 tablefmt="psql",
             )
         else:
