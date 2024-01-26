@@ -1,5 +1,8 @@
+from mysql.connector import MySQLConnection
+
+
 class SQLHandler:
-    def __init__(self, conn) -> None:
+    def __init__(self, conn: MySQLConnection) -> None:
         self.conn = conn
 
     def execute_query(

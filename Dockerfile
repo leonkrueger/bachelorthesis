@@ -1,5 +1,5 @@
 FROM python:3.10
-RUN pip3 install mysql-connector-python tabulate
-# RUN python -c 'from sentence_transformers import SentenceTransformer; SentenceTransformer("all-MiniLM-L6-v2")'
+RUN pip3 install mysql-connector-python tabulate torch accelerate langchain transformers
+RUN python -c 'from transformers import AutoModelForCausalLM; AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1"); tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1")'
 COPY . .
-CMD ["python3", "evaluation.py"]
+CMD ["python3", "main.py"]

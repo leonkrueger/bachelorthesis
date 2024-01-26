@@ -1,11 +1,15 @@
 import random
 from typing import Any
+from utils.name_predictor import NamePredictor
 
 from utils.sql_handler import SQLHandler
 
 
+MINIMAL_COLUMNS_FOUND_RATIO = 0.4
+
+
 def map_table_to_database(
-    query_data: dict[str, Any], sql_handler: SQLHandler
+    query_data: dict[str, Any], sql_handler: SQLHandler, name_predictor: NamePredictor
 ) -> tuple[str, dict[str, str], bool]:
     # Find the database table that fits the specified arguments in the query best.
     # If there is no table found, the table specified in the query is returned.
@@ -30,14 +34,21 @@ def map_table_to_database(
                 False,
             )
     else:
-        table, column_mapping = map_table_to_database_on_columns(
+        table, column_mapping, columns_found_ratio = map_table_to_database_on_columns(
             query_data, sql_handler, sql_handler.get_all_tables()
         )
-        return (
-            table,
-            column_mapping,
-            False,
-        )
+
+        if columns_found_ratio >= MINIMAL_COLUMNS_FOUND_RATIO:
+            return (
+                table,
+                column_mapping,
+                False,
+            )
+        else:
+            predicted_table_name = name_predictor.predict_table_name(
+                query_data["columns"]
+            )
+            return (predicted_table_name, {}, True)
 
 
 def get_fitting_tables(db_tables: list[str], table: str) -> list[str]:
@@ -47,9 +58,10 @@ def get_fitting_tables(db_tables: list[str], table: str) -> list[str]:
 
 def map_table_to_database_on_columns(
     query_data: dict[str, Any], sql_handler: SQLHandler, tables_to_consider: list[str]
-) -> tuple[str, dict[str, str]]:
+) -> tuple[str, dict[str, str], float]:
     # Find the one out of the preselected database tables that fits the specified columns best.
     # The second returned value is a mapping of the columns in the query to the columns in the table.
+    # The third value is the ratio of found columns.
     table, column_mapping, columns_found_ratio = best_fitting_columns(
         sql_handler,
         tables_to_consider,
@@ -59,10 +71,10 @@ def map_table_to_database_on_columns(
     if table:
         # If at least one table contains any specified column,
         # the table that contains the most specified columns is selected.
-        return (table, column_mapping)
+        return (table, column_mapping, columns_found_ratio)
     else:
         # If no table cotains any of the specified columns, a random table is selected.
-        return (random.choice(tables_to_consider), {})
+        return (random.choice(tables_to_consider), {}, 0.0)
 
 
 def best_fitting_columns(

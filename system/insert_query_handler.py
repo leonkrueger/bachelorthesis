@@ -1,15 +1,16 @@
+from utils.name_predictor import NamePredictor
 from utils.sql_handler import SQLHandler
 from system.insert_query_parser import parse_insert_query
 from system.table_mapper import map_table_to_database
 
 
 def handle_insert_query(
-    query: str, sql_handler: SQLHandler
+    query: str, sql_handler: SQLHandler, name_predictor: NamePredictor
 ) -> list[tuple[str | int | float, ...]]:
     # Parse the query of the user and collect information needed for execution
     query_data = parse_insert_query(query)
     query_data["table"], column_mapping, create_table = map_table_to_database(
-        query_data, sql_handler
+        query_data, sql_handler, name_predictor
     )
 
     if create_table:
