@@ -1,9 +1,17 @@
 from mysql.connector import MySQLConnection
 
+from utils.table_origin import TableOrigin
+
 
 class SQLHandler:
     def __init__(self, conn: MySQLConnection) -> None:
         self.conn = conn
+        # All tables used for the internal database management
+        self.internal_tables = {
+            "table_registry": f"""CREATE TABLE IF NOT EXISTS table_registry(
+                name VARCHAR(255),
+                name_origin ENUM({", ".join([f"'{table_origin.value}'" for table_origin in TableOrigin])}));"""
+        }
 
     def execute_query(
         self, query: str, params: tuple[str, ...] = ()
@@ -11,6 +19,7 @@ class SQLHandler:
         # Executes the query with the given parameters on the database
         # Returns the result of the query and the value of the automatically incremented id
         cursor = self.conn.cursor()
+        print(query)
         cursor.execute(query, params)
         output = cursor.fetchall()
         auto_increment_id = cursor.lastrowid
@@ -22,7 +31,11 @@ class SQLHandler:
         # Returns all table names of the database
         query = "SHOW TABLES;"
         output = self.execute_query(query)
-        tables = [table[0] for table in output[0]]
+        tables = [
+            table[0]
+            for table in output[0]
+            if table[0] not in self.internal_tables.keys()
+        ]
         return tables
 
     def get_all_columns(self, table_name: str) -> list[str]:
@@ -38,6 +51,11 @@ class SQLHandler:
         # Creates the specified table
         query = f"CREATE TABLE {table_name} ({', '.join([f'{column[0]} {column[1]}' for column in zip(column_names, column_types)])});"
         self.execute_query(query)
+
+    def create_internal_tables(self) -> None:
+        # Creates all tables used for internal database management
+        for table_name, query in self.internal_tables:
+            self.execute_query(query)
 
     def create_column(
         self, table_name: str, column_name: str, column_type: str

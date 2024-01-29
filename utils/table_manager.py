@@ -5,18 +5,12 @@ from utils.sql_handler import SQLHandler
 class TableManager:
     def __init__(self, sql_handler: SQLHandler) -> None:
         self.sql_handler = sql_handler
-
-        # Create the table registry
-        self.sql_handler.execute_query(
-            """CREATE TABLE IF NOT EXISTS table_registry(
-               name VARCHAR(255),
-               name_origin ENUM('user', 'prediction'));"""
-        )
+        self.sql_handler.create_internal_tables()
 
     def create_table(self, query_data: dict[str, Any]) -> None:
-        # Creates the specified column and adds it to the table registry
+        # Creates the specified table and adds it to the table registry
         self.sql_handler.execute_query(
-            f"""INSERT INTO table_registry VALUES ({query_data['table']}, '{query_data['table_origin'].value}')"""
+            f"""INSERT INTO table_registry VALUES ('{query_data['table']}', '{query_data['table_origin'].value}');"""
         )
 
         self.sql_handler.create_table(

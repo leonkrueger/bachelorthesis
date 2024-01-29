@@ -27,7 +27,11 @@ def map_table_to_database(
             return (query_data["table"], {}, True)
         else:
             # There is at least one table that fit the specified name.
-            table, column_mapping = map_table_to_database_on_columns(
+            (
+                table,
+                column_mapping,
+                columns_found_ratio,
+            ) = map_table_to_database_on_columns(
                 query_data, sql_handler, fitting_db_tables
             )
             return (
