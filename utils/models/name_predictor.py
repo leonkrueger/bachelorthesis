@@ -40,3 +40,5 @@ class NamePredictor:
         args = {"columns": ", ".join(columns)}
         answer = llm_chain.batch(args)
         return answer
+
+        # return "test_table"

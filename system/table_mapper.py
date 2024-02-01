@@ -1,9 +1,9 @@
 import random
 from typing import Any
-from utils.name_predictor import NamePredictor
+from utils.models.name_predictor import NamePredictor
 
-from utils.sql_handler import SQLHandler
-from utils.table_origin import TableOrigin
+from utils.io.sql_handler import SQLHandler
+from utils.enums.table_origin import TableOrigin
 
 
 MINIMAL_COLUMNS_FOUND_RATIO = 0.4

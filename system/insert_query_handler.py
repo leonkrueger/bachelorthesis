@@ -1,8 +1,8 @@
-from utils.name_predictor import NamePredictor
+from utils.models.name_predictor import NamePredictor
 from system.insert_query_parser import parse_insert_query
 from system.table_mapper import map_table_to_database
-from utils.sql_handler import SQLHandler
-from utils.table_manager import TableManager
+from utils.io.sql_handler import SQLHandler
+from system.table_manager import TableManager
 
 
 def handle_insert_query(

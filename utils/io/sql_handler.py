@@ -1,6 +1,6 @@
 from mysql.connector import MySQLConnection
 
-from utils.table_origin import TableOrigin
+from utils.enums.table_origin import TableOrigin
 
 
 class SQLHandler:
@@ -54,7 +54,7 @@ class SQLHandler:
 
     def create_internal_tables(self) -> None:
         # Creates all tables used for internal database management
-        for table_name, query in self.internal_tables:
+        for query in self.internal_tables.values():
             self.execute_query(query)
 
     def create_column(

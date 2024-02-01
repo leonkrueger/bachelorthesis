@@ -2,7 +2,7 @@ import mysql.connector
 import json
 import os
 
-from utils.sql_handler import SQLHandler
+from utils.io.sql_handler import SQLHandler
 from system.insert_query_handler import handle_insert_query
 
 # Create a database connection

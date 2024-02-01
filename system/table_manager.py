@@ -1,5 +1,5 @@
 from typing import Any
-from utils.sql_handler import SQLHandler
+from utils.io.sql_handler import SQLHandler
 
 
 class TableManager:

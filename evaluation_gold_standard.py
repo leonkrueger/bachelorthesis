@@ -2,7 +2,7 @@ import mysql.connector
 import json
 import os
 
-from utils.sql_handler import SQLHandler
+from utils.io.sql_handler import SQLHandler
 
 # Create a database connection
 conn = mysql.connector.connect(
