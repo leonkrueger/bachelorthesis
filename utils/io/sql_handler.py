@@ -38,11 +38,11 @@ class SQLHandler:
         ]
         return tables
 
-    def get_all_columns(self, table_name: str) -> list[str]:
-        # Returns all column names of the given table
+    def get_all_columns(self, table_name: str) -> list[tuple[str, str]]:
+        # Returns all column names and types of the given table
         query = f"SHOW COLUMNS FROM {table_name};"
         output = self.execute_query(query)
-        cols = [col[0] for col in output[0]]
+        cols = [(col[0], col[1]) for col in output[0]]
         return cols
 
     def create_table(

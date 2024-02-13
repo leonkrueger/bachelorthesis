@@ -23,14 +23,16 @@ def handle_insert_query(
     else:
         # Select correct column names and create not-existing columns
         db_columns = []
-        for column_index, column in enumerate(query_data["columns"]):
+        for column, column_type in zip(
+            query_data["columns"], query_data["column_types"]
+        ):
             if column in column_mapping.keys():
                 db_columns.append(column_mapping[column])
             else:
                 table_manager.create_column(
                     query_data["table"],
                     column,
-                    [row[column_index] for row in query_data["values"]],
+                    column_type,
                 )
                 db_columns.append(column)
         query_data["columns"] = db_columns

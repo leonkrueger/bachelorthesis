@@ -16,26 +16,14 @@ class TableManager:
         self.sql_handler.create_table(
             query_data["table"],
             query_data["columns"],
-            self.get_column_types(query_data["values"]),
+            query_data["column_types"],
         )
 
     def create_column(
-        self, table_name: str, column_name: str, column_values: list[str]
+        self,
+        table_name: str,
+        column_name: str,
+        column_type: str,
     ) -> None:
         # Creates the specified column
-        self.sql_handler.create_column(
-            table_name, column_name, self.get_column_type(column_values[0])
-        )
-
-    def get_column_types(self, values: list[list[str]]) -> list[str]:
-        # Computes the required column types for the given values
-        return [self.get_column_type(value) for value in values[0]]
-
-    def get_column_type(self, value: str) -> str:
-        # Computes the required column type for the given value
-        if value.startswith('"') or value.startswith("'"):
-            return "VARCHAR(255)"
-        elif "." in value:
-            return "DOUBLE"
-        else:
-            return "BIGINT"
+        self.sql_handler.create_column(table_name, column_name, column_type)

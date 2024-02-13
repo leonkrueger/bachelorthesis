@@ -9,7 +9,7 @@ class UnexpectedTokenException(Exception):
 
 
 def parse_insert_query(query: str) -> dict[str, str | list[str] | list[list[str]]]:
-    # Parses INSERT-queries and extracts the table, columns and values if present
+    # Parses INSERT-queries and extracts the table, columns, values and column types if present
     # Parameter query needs to be lowercase
     # TODO: '$' in table/column name doesn't work
     # INSERT INTO Cities (Name, Country) VALUES ("Paris", "France");
@@ -33,7 +33,9 @@ def parse_insert_query(query: str) -> dict[str, str | list[str] | list[list[str]
         query_data["columns"], index = parse_columns(tokens, index)
     if tokens[index].upper() != "VALUES":
         raise UnexpectedTokenException("VALUES", tokens[index])
-    query_data["values"], index = parse_values(tokens, index + 1)
+    query_data["values"], query_data["column_types"], index = parse_values(
+        tokens, index + 1
+    )
 
     if index < len(tokens) and tokens[index] != ";" and "".join(tokens[index:]) != "":
         raise UnexpectedTokenException(";", tokens[index])
@@ -65,39 +67,55 @@ def parse_columns(tokens: list[str], index: int) -> tuple[list[str], int]:
     return (columns, index + 1)
 
 
-def parse_values(tokens: list[str], index: int) -> tuple[list[list[str]], int]:
+def parse_values(
+    tokens: list[str], index: int
+) -> tuple[list[list[str]], list[str], int]:
     values = []
-    row_values, index = parse_values_for_row(tokens, index)
+    row_values, column_types, index = parse_values_for_row(tokens, index)
     values.append(row_values)
 
     while tokens[index] == ",":
         row_values, index = parse_values_for_row(tokens, index + 1)
         values.append(row_values)
 
-    return (values, index)
+    return (values, column_types, index)
 
 
-def parse_values_for_row(tokens: list[str], index: int) -> tuple[list[str], int]:
+def parse_values_for_row(
+    tokens: list[str], index: int
+) -> tuple[list[str], list[str], int]:
     if tokens[index] != "(":
         raise UnexpectedTokenException("(", tokens[index])
 
-    values = []
-    if tokens[index + 1] == "-":
-        values.append("-" + tokens[index + 2])
-        index += 3
-    else:
-        values.append(tokens[index + 1])
-        index += 2
+    values, column_types = [], []
+
+    value, column_type, index = parse_single_value(tokens, index + 1)
+    values.append(value)
+    column_types.append(column_type)
 
     while tokens[index] == ",":
-        if tokens[index + 1] == "-":
-            values.append("-" + tokens[index + 2])
-            index += 3
-        else:
-            values.append(tokens[index + 1])
-            index += 2
+        value, column_type, index = parse_single_value(tokens, index + 1)
+        values.append(value)
+        column_types.append(column_type)
 
     if tokens[index] != ")":
         raise UnexpectedTokenException(")", tokens[index])
 
-    return (values, index + 1)
+    return (values, column_types, index + 1)
+
+
+def parse_single_value(tokens: list[str], index: int) -> tuple[str, str, int]:
+    if tokens[index] == "-":
+        return ("-" + tokens[index + 1], get_column_type(tokens[index + 1]), index + 2)
+    else:
+        return (tokens[index], get_column_type(tokens[index]), index + 1)
+
+
+def get_column_type(value: str) -> str:
+    # Computes the required column type for the given value
+    if value.startswith('"') or value.startswith("'"):
+        return "VARCHAR(255)"
+    elif "." in value:
+        return "DOUBLE"
+    else:
+        return "BIGINT"
