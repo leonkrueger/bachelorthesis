@@ -15,9 +15,11 @@ conn = mysql.connector.connect(
     database="db",
 )
 
+HF_API_TOKEN = open("HF_TOKEN", "r").read().strip()
+
 sql_handler = SQLHandler(conn)
 table_manager = TableManager(sql_handler)
-name_predictor = NamePredictor()
+name_predictor = NamePredictor(HF_API_TOKEN)
 
 print(
     "Expected: customer, Real: ",

@@ -14,7 +14,7 @@ conn = mysql.connector.connect(
 
 sql_handler = SQLHandler(conn)
 
-with open(os.path.join("/mounted_evaluation", "errors.txt"), "w") as errors_file:
+with open(os.path.join("/app", "mounted_evaluation", "errors.txt"), "w") as errors_file:
     with open(os.path.join("evaluation", "gold_standard_input.sql")) as input_file:
         queries = input_file.read().split(";")
         queries_length = float(len(queries))
@@ -37,7 +37,9 @@ with open(os.path.join("/mounted_evaluation", "errors.txt"), "w") as errors_file
                 print(f"Error while executing query: {query}")
                 errors_file.write(f"Error while executing query: {query}\n")
 
-    with open(os.path.join("/mounted_evaluation", "results.json"), "w") as results_file:
+    with open(
+        os.path.join("/app", "mounted_evaluation", "results.json"), "w"
+    ) as results_file:
         json.dump(results, results_file)
 
 # Close the database connection

@@ -4,6 +4,8 @@ import os
 
 from utils.io.sql_handler import SQLHandler
 from system.insert_query_handler import handle_insert_query
+from system.table_manager import TableManager
+from utils.models.name_predictor import NamePredictor
 
 # Create a database connection
 conn = mysql.connector.connect(
@@ -13,9 +15,13 @@ conn = mysql.connector.connect(
     database="db",
 )
 
-sql_handler = SQLHandler(conn)
+HF_API_TOKEN = open("HF_TOKEN", "r").read().strip()
 
-with open(os.path.join("/mounted_evaluation", "errors.txt"), "w") as errors_file:
+sql_handler = SQLHandler(conn)
+table_manager = TableManager(sql_handler)
+name_predictor = NamePredictor(HF_API_TOKEN)
+
+with open(os.path.join("/app", "mounted_evaluation", "errors.txt"), "w") as errors_file:
     with open(os.path.join("evaluation", "evaluation_input.sql")) as input_file:
         queries = input_file.read().split(";")
         queries_length = float(len(queries))
@@ -23,7 +29,7 @@ with open(os.path.join("/mounted_evaluation", "errors.txt"), "w") as errors_file
             query = query.strip()
             print(f"{100 * index / queries_length}%")
             try:
-                handle_insert_query(query, sql_handler)
+                handle_insert_query(query, sql_handler, table_manager, name_predictor)
             except Exception as e:
                 print(f"Error while executing query: {query}")
                 errors_file.write(f"Error {e} while executing query: {query}\n")
@@ -39,7 +45,9 @@ with open(os.path.join("/mounted_evaluation", "errors.txt"), "w") as errors_file
                 print(f"Error while executing query: {query}")
                 errors_file.write(f"Error while executing query: {query}\n")
 
-    with open(os.path.join("/mounted_evaluation", "results.json"), "w") as results_file:
+    with open(
+        os.path.join("/app", "mounted_evaluation", "results.json"), "w"
+    ) as results_file:
         json.dump(results, results_file)
 
 # Close the database connection
