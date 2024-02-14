@@ -1,4 +1,5 @@
 from typing import Any
+from utils.enums.table_origin import TableOrigin
 from utils.io.sql_handler import SQLHandler
 
 
@@ -10,7 +11,7 @@ class TableManager:
     def create_table(self, query_data: dict[str, Any]) -> None:
         # Creates the specified table and adds it to the table registry
         self.sql_handler.execute_query(
-            f"""INSERT INTO table_registry VALUES ('{query_data['table']}', '{query_data['table_origin'].value}');"""
+            f"INSERT INTO table_registry VALUES ('{query_data['table']}', '{query_data['table_origin'].value}');"
         )
 
         self.sql_handler.create_table(
@@ -18,6 +19,26 @@ class TableManager:
             query_data["columns"],
             query_data["column_types"],
         )
+
+    def check_update_of_table_name(self, current_table_name: str, new_table_name: str):
+        # Checks if the name of the table was set by prediction. If so, it changes its name to the specified one.
+        current_origin = TableOrigin(
+            self.sql_handler.execute_query(
+                f"SELECT name_origin FROM table_registry WHERE name = '{current_table_name}';"
+            )[0][0][0]
+        )
+
+        if current_origin == TableOrigin.PREDICTION:
+            self.sql_handler.execute_query(
+                f"ALTER TABLE {current_table_name} RENAME {new_table_name};"
+            )
+            self.sql_handler.execute_query(
+                f"UPDATE table_registry SET name = '{new_table_name}', name_origin = '{TableOrigin.USER.value}' "
+                f"WHERE name = '{current_table_name}';"
+            )
+            return True
+
+        return False
 
     def create_column(
         self,

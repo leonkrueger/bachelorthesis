@@ -13,14 +13,26 @@ def handle_insert_query(
 ) -> list[tuple[str | int | float, ...]]:
     # Parse the query of the user and collect information needed for execution
     query_data = parse_insert_query(query)
-    query_data["table"], column_mapping, create_table = map_table_to_database(
+    table_name, column_mapping, create_table = map_table_to_database(
         query_data, sql_handler, name_predictor
     )
 
     if create_table:
         # Create database table if it does not already exist
+        query_data["table"] = table_name
         table_manager.create_table(query_data)
     else:
+        # Check if the table name needs to be updated
+        # This could be the case, if it was specified by the user
+        # If it was not specified or not changed, the name in the database needs to be used
+        if "table" in query_data.keys():
+            if not table_manager.check_update_of_table_name(
+                table_name, query_data["table"]
+            ):
+                query_data["table"] = table_name
+        else:
+            query_data["table"] = table_name
+
         # Select correct column names and create not-existing columns
         db_columns = []
         for column, column_type in zip(
