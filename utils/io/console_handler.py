@@ -1,4 +1,4 @@
-ASK_USER_FOR_FEEDBACK = True
+ASK_USER_FOR_FEEDBACK = False
 
 
 def yes_or_no_question(question: str, default_answer: bool = False) -> bool:

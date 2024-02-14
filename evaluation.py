@@ -27,6 +27,9 @@ with open(os.path.join("/app", "mounted_evaluation", "errors.txt"), "w") as erro
         queries_length = float(len(queries))
         for index, query in enumerate(queries):
             query = query.strip()
+            if query == "":
+                continue
+
             print(f"{100 * index / queries_length}%")
             try:
                 handle_insert_query(query, sql_handler, table_manager, name_predictor)

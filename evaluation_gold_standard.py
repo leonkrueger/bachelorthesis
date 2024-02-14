@@ -19,6 +19,10 @@ with open(os.path.join("/app", "mounted_evaluation", "errors.txt"), "w") as erro
         queries = input_file.read().split(";")
         queries_length = float(len(queries))
         for index, query in enumerate(queries):
+            query = query.strip()
+            if query == "":
+                continue
+
             print(f"{100 * index / queries_length}%")
             try:
                 sql_handler.execute_query(query)

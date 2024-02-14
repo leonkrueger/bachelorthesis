@@ -33,7 +33,7 @@ def map_table_to_database(
             ] >= MINIMAL_COLUMNS_FOUND_RATIO and yes_or_no_question(
                 f"Found table {table_data['table']} with fitting columns {', '.join(table_data['table_columns'])}. "
                 "Do you want use this table for insertion?",
-                True,
+                False,
             ):
                 # Use the found table despite having a non-fitting name
                 return (table_data["table"], table_data["column_mapping"], False)

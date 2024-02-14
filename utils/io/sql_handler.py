@@ -19,7 +19,7 @@ class SQLHandler:
         # Executes the query with the given parameters on the database
         # Returns the result of the query and the value of the automatically incremented id
         cursor = self.conn.cursor()
-        print(query)
+        # print(query)
         cursor.execute(query, params)
         output = cursor.fetchall()
         auto_increment_id = cursor.lastrowid
