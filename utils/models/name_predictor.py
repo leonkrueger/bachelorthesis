@@ -51,7 +51,7 @@ class NamePredictor:
             prompt = PromptTemplate(template=prompt_text, input_variables=["columns"])
             llm_chain = LLMChain(prompt=prompt, llm=self.llm)
             args = {"columns": joined_columns}
-            return llm_chain.run(args)
+            return llm_chain.run(args).strip()
         else:
             prompt_text = prompt_text.replace("{columns}", joined_columns)
             answer = self.client.text_generation(
