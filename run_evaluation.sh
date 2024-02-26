@@ -15,8 +15,9 @@ docker run -d --name $mysql_container_name --net $network_name -p 3306:3306 -e "
 sleep 120
 
 # Build and run python container
-docker build -t $image_name .
-docker run -it --rm --net $network_name -v $(pwd)/evaluation:/app/mounted_evaluation $image_name
+cd ..
+docker build -t $image_name -f evaluation/bachelorthesis/Dockerfile .
+docker run -it --rm --net $network_name -v $(pwd)/evaluation/bachelorthesis:/app/mounted_evaluation $image_name
 
 # Remove existing SQL containers and images
 docker container stop $mysql_container_name
