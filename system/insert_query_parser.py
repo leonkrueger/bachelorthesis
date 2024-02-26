@@ -1,5 +1,6 @@
 import tokenize
 import io
+import re
 
 
 class UnexpectedTokenException(Exception):
@@ -105,15 +106,28 @@ def parse_values_for_row(
 
 
 def parse_single_value(tokens: list[str], index: int) -> tuple[str, str, int]:
+    # Negative numbers
     if tokens[index] == "-":
         return ("-" + tokens[index + 1], get_column_type(tokens[index + 1]), index + 2)
-    else:
-        return (tokens[index], get_column_type(tokens[index]), index + 1)
+
+    # Double ' or " is an escape sequence (e.g. 'O''Brian' -> O'Brian)
+    if tokens[index][0] == "'" or tokens[index][0] == '"':
+        double_escape_char = tokens[index][0]
+        value = tokens[index]
+        while tokens[index + 1][0] == double_escape_char:
+            index += 1
+            value += tokens[index]
+        return (value, get_column_type(value), index + 1)
+
+    # All other values
+    return (tokens[index], get_column_type(tokens[index]), index + 1)
 
 
 def get_column_type(value: str) -> str:
     # Computes the required column type for the given value
-    if value.startswith('"') or value.startswith("'"):
+    if re.match(r"[\"\'][0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9][\"\']", value):
+        return "DATE"
+    elif value.startswith('"') or value.startswith("'"):
         return "VARCHAR(255)"
     elif "." in value:
         return "DOUBLE"

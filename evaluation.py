@@ -39,14 +39,14 @@ with open(os.path.join("/app", "mounted_evaluation", "errors.txt"), "w") as erro
 
     results = {}
 
-    with open(os.path.join("evaluation", "queries.sql")) as queries_file:
-        for query in queries_file.readlines():
-            try:
-                output = sql_handler.execute_query(query)[0]
-                results[query] = output
-            except Exception as e:
-                print(f"Error while executing query: {query}")
-                errors_file.write(f"Error while executing query: {query}\n")
+    for table in sql_handler.get_all_tables():
+        query = f"SELECT * FROM {table};"
+        try:
+            output = sql_handler.execute_query(query)[0]
+            results[query] = output
+        except Exception as e:
+            print(f"Error while executing query: {query}")
+            errors_file.write(f"Error while executing query: {query}\n")
 
     with open(
         os.path.join("/app", "mounted_evaluation", "results.json"), "w"
