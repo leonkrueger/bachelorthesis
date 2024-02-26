@@ -58,12 +58,13 @@ def parse_columns(tokens: list[str], index: int) -> tuple[list[str], int]:
     columns.append(tokens[index + 1])
     index += 2
 
-    while tokens[index] == ",":
-        columns.append(tokens[index + 1])
-        index += 2
-
-    if tokens[index] != ")":
-        raise UnexpectedTokenException(")", tokens[index])
+    while tokens[index] != ")":
+        if tokens[index] == ",":
+            columns.append(tokens[index + 1])
+            index += 2
+        else:
+            columns[-1] = columns[-1] + tokens[index]
+            index += 1
 
     return (columns, index + 1)
 

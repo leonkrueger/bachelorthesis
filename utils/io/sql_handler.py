@@ -63,3 +63,17 @@ class SQLHandler:
         # Creates the specified column
         query = f"ALTER TABLE {table_name} ADD {column_name} {column_type};"
         self.execute_query(query)
+
+    def remove_table(self, table_name: str) -> None:
+        """Removes the specified table"""
+        query = f"DROP TABLE {table_name};"
+        self.execute_query(query)
+
+    def reset_database(self) -> None:
+        """Removes all custom tables in the database and empties the internal ones"""
+        for table in self.get_all_tables():
+            self.remove_table(table)
+
+        for table in self.internal_tables.keys():
+            query = f"DELETE FROM {table};"
+            self.execute_query(query)

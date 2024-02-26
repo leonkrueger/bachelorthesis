@@ -21,22 +21,17 @@ sql_handler = SQLHandler(conn)
 table_manager = TableManager(sql_handler)
 name_predictor = NamePredictor(HF_API_TOKEN)
 
-with open(os.path.join("/app", "mounted_evaluation", "errors.txt"), "w") as errors_file:
-    with open(os.path.join("evaluation", "evaluation_input.sql")) as input_file:
-        queries = input_file.read().split(";")
-        queries_length = float(len(queries))
-        for index, query in enumerate(queries):
-            query = query.strip()
-            if query == "":
-                continue
+# Switch if necessary
+evaluation_folder = "bird"
 
-            print(f"{100 * index / queries_length}%")
-            try:
-                handle_insert_query(query, sql_handler, table_manager, name_predictor)
-            except Exception as e:
-                print(f"Error while executing query: {query}")
-                errors_file.write(f"Error {e} while executing query: {query}\n")
+errors_file_path = os.path.join("/app", "mounted_evaluation", "errors.txt")
+errors_file = open(errors_file_path, "w", encoding="utf-8")
 
+evaluation_folder = os.path.join("/app", "mounted_evaluation", evaluation_folder)
+
+
+def save_results_and_clean_database(results_file_path: str) -> None:
+    """Saves the database contents to a json-file"""
     results = {}
 
     for table in sql_handler.get_all_tables():
@@ -49,9 +44,92 @@ with open(os.path.join("/app", "mounted_evaluation", "errors.txt"), "w") as erro
             errors_file.write(f"Error while executing query: {query}\n")
 
     with open(
-        os.path.join("/app", "mounted_evaluation", "results.json"), "w"
+        results_file_path,
+        "w",
+        encoding="utf-8",
     ) as results_file:
         json.dump(results, results_file)
+    os.chmod(results_file_path, 0o777)
+
+    sql_handler.reset_database()
+    print(f"Saved results to {results_file_path}.")
+
+
+def run_gold_standard(folder: str) -> None:
+    """Runs the gold standard queries"""
+    # Return if experiment was already run
+    results_file_path = os.path.join(folder, "gold_standard_results.json")
+    with open(results_file_path, encoding="utf-8") as results_file:
+        if results_file.read().strip() != "":
+            return
+
+    with open(
+        os.path.join(folder, "gold_standard_input.sql"), encoding="utf-8"
+    ) as inserts_file:
+        queries = inserts_file.read().split(";")
+
+    for query in queries:
+        query = query.strip()
+        if query == "":
+            continue
+        try:
+            sql_handler.execute_query(query)
+        except Exception as e:
+            print(f"Error while executing query: {query}")
+            errors_file.write(f"Error {e} while executing query: {query}\n")
+
+    save_results_and_clean_database(results_file_path)
+
+
+def run_experiment(folder: str) -> None:
+    """Runs the queries of one experiment"""
+    for path in os.listdir(folder):
+        inserts_file_path = os.path.join(folder, path)
+        if os.path.isdir(inserts_file_path) or not inserts_file_path.endswith(".sql"):
+            continue
+
+        # Return if experiment was already run
+        results_file_path = inserts_file_path[:-4].replace("input", "results") + ".json"
+        with open(results_file_path, encoding="utf-8") as results_file:
+            if results_file.read().strip() != "":
+                return
+
+        with open(inserts_file_path, encoding="utf-8") as input_file:
+            queries = input_file.read().split(";")
+        for query in queries:
+            query = query.strip()
+            if query == "":
+                continue
+            try:
+                handle_insert_query(query, sql_handler, table_manager, name_predictor)
+            except Exception as e:
+                print(f"Error while executing query: {query}")
+                errors_file.write(f"Error {e} while executing query: {query}\n")
+
+        save_results_and_clean_database(results_file_path)
+
+
+def run_experiments_for_database(folder: str) -> None:
+    """Runs all experiments for a database"""
+    run_gold_standard(folder)
+
+    for path in os.listdir(folder):
+        experiment_folder = os.path.join(folder, path)
+        if not os.path.isdir(experiment_folder):
+            continue
+
+        run_experiment(experiment_folder)
+
+
+for path in os.listdir(evaluation_folder):
+    subfolder = os.path.join(evaluation_folder, path)
+    if not os.path.isdir(subfolder):
+        continue
+
+    run_experiments_for_database(subfolder)
+
+errors_file.close()
+os.chmod(errors_file_path, 0o777)
 
 # Close the database connection
 conn.close()
