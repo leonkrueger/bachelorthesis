@@ -38,6 +38,13 @@ def save_results_and_clean_database(results_file_path: str) -> None:
         query = f"SELECT * FROM {table};"
         try:
             output = sql_handler.execute_query(query)[0]
+            output = [
+                [
+                    value if type(value) in [int, float, str] else str(value)
+                    for value in row
+                ]
+                for row in output
+            ]
             results[query] = output
         except Exception as e:
             print(f"Error while executing query: {query}")
