@@ -157,7 +157,11 @@ def parse_replace_function_helper(
 
 def get_column_type(value: str) -> str:
     # Computes the required column type for the given value
-    if re.match(r"[\"\'][0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9][\"\']", value):
+    if re.match(
+        r"[\"\'][0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}[\"\']", value
+    ):
+        return "DATETIME"
+    elif re.match(r"[\"\'][0-9]{4}-[0-9]{2}-[0-9]{2}[\"\']", value):
         return "DATE"
     elif value.startswith('"') or value.startswith("'"):
         return "VARCHAR(255)"
