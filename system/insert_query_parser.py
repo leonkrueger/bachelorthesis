@@ -107,6 +107,11 @@ def parse_values_for_row(
 
 
 def parse_single_value(tokens: list[str], index: int) -> tuple[str, str, int]:
+    # Replace call
+    if tokens[index] == "replace":
+        value, index = parse_replace_function(tokens, index + 1)
+        return ("replace" + value, "VARCHAR(255)", index)
+
     # Negative numbers
     if tokens[index] == "-":
         return ("-" + tokens[index + 1], get_column_type(tokens[index + 1]), index + 2)
@@ -122,6 +127,32 @@ def parse_single_value(tokens: list[str], index: int) -> tuple[str, str, int]:
 
     # All other values
     return (tokens[index], get_column_type(tokens[index]), index + 1)
+
+
+def parse_replace_function(tokens: list[str], index: int) -> tuple[str, int]:
+    if tokens[index] == "(":
+        value, index = parse_replace_function_helper(tokens, index + 1, 1)
+        return ("(" + value, index)
+    else:
+        raise UnexpectedTokenException("(", tokens[index])
+
+
+def parse_replace_function_helper(
+    tokens: list[str], index: int, open_parentheses: int
+) -> tuple[str, int]:
+    if open_parentheses == 0:
+        return ("", index)
+
+    value, end_index = parse_replace_function_helper(
+        tokens,
+        index + 1,
+        (
+            open_parentheses + 1
+            if tokens[index] == "("
+            else open_parentheses - 1 if tokens[index] == ")" else open_parentheses
+        ),
+    )
+    return (tokens[index] + value, end_index)
 
 
 def get_column_type(value: str) -> str:
