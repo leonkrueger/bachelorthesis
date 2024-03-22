@@ -1,44 +1,64 @@
 from openai import OpenAI
-
-from utils.io.sql_handler import SQLHandler
+import re
 
 
 class OpenAIModel:
-    def __init__(self, sql_handler: SQLHandler) -> None:
-        self.client = OpenAI()  # Insert keys
-        self.sql_handler = sql_handler
+    def __init__(
+        self,
+        openai_api_key: str,
+        openai_org_id: str,
+        model: str = "gpt-3.5-turbo",
+    ) -> None:
+        self.client = OpenAI(openai_api_key, openai_org_id)
+        self.model = model
 
-    def run_prompt(self, query: str) -> str:
-        tables = self.sql_handler.get_all_tables()
-        database_state = (
+    def run_prompt(self, messages: list[dict[str, str]], max_tokens: int) -> str:
+        """Runs a prompt an OpenAI chat model and returns its answer"""
+        return (
+            self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                max_tokens=max_tokens,
+            )
+            .choices[0]
+            .message.content
+        )
+
+    def predict_table_name(
+        self, query: str, database_state: dict[str, list[str]]
+    ) -> str:
+        """Runs a table prediction prompt on an OpenAI chat model. Returns the predicted table."""
+        database_string = (
             "\n".join(
                 [
-                    f"- Table: {table}, Columns: [{', '.join([column[0] for column in self.sql_handler.get_all_columns(table)])}]"
-                    for table in tables
+                    f"- Table: {table}, Columns: [{', '.join([column[0] for column in columns])}]"
+                    for table, columns in database_state.items()
                 ]
             )
-            if len(tables) > 0
-            else "No table exists yet."
+            if len(database_state) > 0
+            else "No table exists yet"
         )
 
-        completion = self.client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are an intelligent database that predicts on which table a SQL-insert should be executed. "
-                    "You give the output in the form 'Table: {table_name}' where '{table_name}' is replaced with the determined table name "
-                    "if there is a suitable table in the database or 'New table' else. You don't give any explanation for your result.",
-                },
-                {
-                    "role": "user",
-                    "content": f"Predict the table for this example: \n"
-                    f"Query: {query}\n"
-                    f"Database State: \n{database_state}",
-                },
-            ],
-            max_tokens=5,
+        return re.search(
+            r"Table: (?P<table>\S+)",
+            self.run_prompt(
+                [
+                    {
+                        "role": "system",
+                        "content": "You are an intelligent database that predicts on which table a SQL-insert should be executed. "
+                        "The inserts can contain abbreviated or synonymous names. The table and column names can be missing entirely. "
+                        "You should then predict your result based on the available information. "
+                        "You give the output in the form 'Table: {table_name}'. If there is a suitable table in the database, "
+                        "you replace '{table_name}' with its name. Else, you replace '{table_name}' with a suitable name for a database table. "
+                        "You don't give any explanation for your result.",
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Predict the table for this example:\n"
+                        f"Query: {query}\n"
+                        f"Database State:\n{database_string}",
+                    },
+                ],
+                5,
+            ),
         )
-
-        print(completion)
-        return completion.choices[0].message.content

@@ -45,6 +45,13 @@ class SQLHandler:
         cols = [(col[0], col[1]) for col in output[0]]
         return cols
 
+    def get_database_state(self) -> dict[str, list[str]]:
+        """Returns a dictionary containing all tables and its columns"""
+        return {
+            table: [column[0] for column in self.get_all_columns(table)]
+            for table in self.get_all_tables()
+        }
+
     def create_table(
         self, table_name: str, column_names: list[str], column_types: list[str]
     ) -> None:
