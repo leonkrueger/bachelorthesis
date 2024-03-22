@@ -1,0 +1,41 @@
+services:
+  mysql:
+    image: mysql
+    container_name: bachelorthesis_leon_krueger_mysql
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: Baum_4392
+      MYSQL_DATABASE: db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: Start123
+    networks:
+      - bachelorthesis_leon_krueger_network
+  app:
+    container_name: bachelorthesis_leon_krueger_app
+    build: .
+    working_dir: /app
+    tty: true
+    stdin_open: true
+    volumes:
+     - ./bachelorthesis:/app
+    networks:
+      - bachelorthesis_leon_krueger_network
+    depends_on:
+      - mysql
+  evaluation:
+    container_name: bachelorthesis_leon_krueger_evaluation
+    build:
+      dockerfile: ../evaluation/bachelorthesis/Dockerfile
+    working_dir: /app
+    volumes:
+     - ./bachelorthesis:/app
+     - ../evaluation/bachelorthesis:/app/evaluation
+    networks:
+      - bachelorthesis_leon_krueger_network
+    depends_on:
+      - mysql
+
+networks:
+  bachelorthesis_leon_krueger_network:
+    driver: bridge

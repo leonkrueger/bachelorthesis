@@ -15,19 +15,17 @@ conn = mysql.connector.connect(
     database="db",
 )
 
-HF_API_TOKEN = open("HF_TOKEN", "r").read().strip()
-
 sql_handler = SQLHandler(conn)
 table_manager = TableManager(sql_handler)
-name_predictor = NamePredictor(HF_API_TOKEN)
+name_predictor = NamePredictor(os.getenv("HF_API_TOKEN"))
 
 # Switch if necessary
 evaluation_folder = "bird"
 
-errors_file_path = os.path.join("/app", "mounted_evaluation", "errors.txt")
+errors_file_path = os.path.join("/app", "evaluation", "errors.txt")
 errors_file = open(errors_file_path, "w", encoding="utf-8")
 
-evaluation_folder = os.path.join("/app", "mounted_evaluation", evaluation_folder)
+evaluation_folder = os.path.join("/app", "evaluation", evaluation_folder)
 
 
 def save_results_and_clean_database(results_file_path: str) -> None:
