@@ -10,8 +10,8 @@ class UnexpectedTokenException(Exception):
 
 
 def parse_insert_query(query: str) -> dict[str, str | list[str] | list[list[str]]]:
-    # Parses INSERT-queries and extracts the table, columns, values and column types if present
-    # Parameter query needs to be lowercase
+    """Parses INSERT-queries and extracts the table, columns, values and column types if present
+    Parameter query needs to be lowercase"""
     # TODO: '$' in table/column name doesn't work
     # INSERT INTO Cities (Name, Country) VALUES ("Paris", "France");
     # INSERT INTO Cities VALUES ("Paris", "France"), ("Berlin", "Germany");
@@ -156,7 +156,7 @@ def parse_replace_function_helper(
 
 
 def get_column_type(value: str) -> str:
-    # Computes the required column type for the given value
+    """Computes the required column type for the given value"""
     if re.match(
         r"[\"\'][0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}[\"\']", value
     ):

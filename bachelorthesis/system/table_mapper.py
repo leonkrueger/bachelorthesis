@@ -12,10 +12,10 @@ MINIMAL_COLUMNS_FOUND_RATIO = 0.4
 def map_table_to_database(
     query_data: dict[str, Any], sql_handler: SQLHandler, name_predictor: NamePredictor
 ) -> tuple[str, dict[str, str], bool]:
-    # Find the database table that fits the specified arguments in the query best.
-    # If there is no table found, the table specified in the query is returned.
-    # The second returned value is a mapping of the columns in the query to the columns in the table.
-    # The third returned value signals, if the table needs to be created.
+    """Find the database table that fits the specified arguments in the query best.
+    If there is no table found, the table specified in the query is returned.
+    The second returned value is a mapping of the columns in the query to the columns in the table.
+    The third returned value signals, if the table needs to be created."""
     database_tables = sql_handler.get_all_tables()
     if "table" in query_data.keys():
         # Table name specified in the query
@@ -89,14 +89,14 @@ def map_table_to_database(
 
 
 def get_fitting_tables(db_tables: list[str], table: str) -> list[str]:
-    # Returns all tables whose name fits the specified table.
+    """Returns all tables whose name fits the specified table."""
     return [db_table for db_table in db_tables if table.lower() == db_table.lower()]
 
 
 def map_table_to_database_on_columns(
     query_data: dict[str, Any], sql_handler: SQLHandler, tables_to_consider: list[str]
 ) -> dict[str, Any]:
-    # Find the one out of the preselected database tables that fits the specified columns best.
+    """Find the one out of the preselected database tables that fits the specified columns best."""
     return best_fitting_columns(
         sql_handler,
         tables_to_consider,
@@ -111,8 +111,8 @@ def best_fitting_columns(
     columns: list[str],
     column_types: list[str],
 ) -> dict[str, Any]:
-    # Checks all tables of the database for the one that contains most of the specified columns.
-    # Returns a dict with the required information of the best fitting table
+    """Checks all tables of the database for the one that contains most of the specified columns.
+    Returns a dict with the required information of the best fitting table"""
     best_table_data = {
         "table": None,
         "table_columns": [],

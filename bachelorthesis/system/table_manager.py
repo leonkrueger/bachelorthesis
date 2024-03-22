@@ -9,7 +9,7 @@ class TableManager:
         self.sql_handler.create_internal_tables()
 
     def create_table(self, query_data: dict[str, Any]) -> None:
-        # Creates the specified table and adds it to the table registry
+        """Creates the specified table and adds it to the table registry"""
         self.sql_handler.execute_query(
             f"INSERT INTO table_registry VALUES ('{query_data['table']}', '{query_data['table_origin'].value}');"
         )
@@ -21,7 +21,7 @@ class TableManager:
         )
 
     def check_update_of_table_name(self, current_table_name: str, new_table_name: str):
-        # Checks if the name of the table was set by prediction. If so, it changes its name to the specified one.
+        """Checks if the name of the table was set by prediction. If so, it changes its name to the specified one."""
         current_origin = TableOrigin(
             self.sql_handler.execute_query(
                 f"SELECT name_origin FROM table_registry WHERE name = '{current_table_name}';"
@@ -46,5 +46,5 @@ class TableManager:
         column_name: str,
         column_type: str,
     ) -> None:
-        # Creates the specified column
+        """Creates the specified column"""
         self.sql_handler.create_column(table_name, column_name, column_type)
