@@ -2,8 +2,10 @@ import mysql.connector
 import json
 import os
 
-from bachelorthesis.utils.models.openai_model import OpenAIModel
-from utils.io.sql_handler import SQLHandler
+from system.strategies.heuristic.heuristic_strategy import HeuristicStrategy
+from system.strategies.heuristic.name_predictor import NamePredictor
+from system.strategies.openai.openai_model import OpenAIModel
+from system.sql_handler import SQLHandler
 from system.insert_query_handler import handle_insert_query
 from system.table_manager import TableManager
 
@@ -17,7 +19,9 @@ conn = mysql.connector.connect(
 
 sql_handler = SQLHandler(conn)
 table_manager = TableManager(sql_handler)
-openai_model = OpenAIModel(os.getenv("OPENAI_API_KEY"), os.getenv("OPENAI_ORG_ID"))
+
+strategy = HeuristicStrategy(NamePredictor(os.getenv("HF_API_TOKEN")))
+strategy = OpenAIModel(os.getenv("OPENAI_API_KEY"), os.getenv("OPENAI_ORG_ID"))
 
 # Switch if necessary
 evaluation_folder = "bird"
@@ -106,7 +110,7 @@ def run_experiment(folder: str) -> None:
             if query == "":
                 continue
             try:
-                handle_insert_query(query, sql_handler, table_manager, openai_model)
+                handle_insert_query(query, sql_handler, table_manager, strategy)
             except Exception as e:
                 print(f"Error while executing query: {query}")
                 errors_file.write(f"Error {e} while executing query: {query}\n")

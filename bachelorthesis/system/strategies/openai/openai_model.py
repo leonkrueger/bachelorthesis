@@ -1,8 +1,11 @@
 from openai import OpenAI
 import re
 
+from ...data.query_data import QueryData
+from ..strategy import Strategy
 
-class OpenAIModel:
+
+class OpenAIModel(Strategy):
     def __init__(
         self,
         openai_api_key: str,
@@ -24,18 +27,15 @@ class OpenAIModel:
             .message.content
         )
 
-    def predict_table_name(
-        self, query: str, database_state: dict[str, list[str]]
-    ) -> str:
-        """Runs a table prediction prompt on an OpenAI chat model. Returns the predicted table."""
+    def predict_table_name(self, query_data: QueryData) -> str:
         database_string = (
             "\n".join(
                 [
                     f"- Table: {table}, Columns: [{', '.join([column[0] for column in columns])}]"
-                    for table, columns in database_state.items()
+                    for table, columns in query_data.database_state
                 ]
             )
-            if len(database_state) > 0
+            if len(query_data.database_state) > 0
             else "No table exists yet"
         )
 
@@ -55,10 +55,10 @@ class OpenAIModel:
                     {
                         "role": "user",
                         "content": f"Predict the table for this example:\n"
-                        f"Query: {query}\n"
+                        f"Query: {query_data.query}\n"
                         f"Database State:\n{database_string}",
                     },
                 ],
                 5,
             ),
-        )
+        ).group("table")

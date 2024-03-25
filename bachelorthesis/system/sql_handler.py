@@ -1,6 +1,6 @@
 from mysql.connector import MySQLConnection
 
-from utils.enums.table_origin import TableOrigin
+from .data.table_origin import TableOrigin
 
 
 class SQLHandler:

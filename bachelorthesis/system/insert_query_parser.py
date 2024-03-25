@@ -2,6 +2,8 @@ import tokenize
 import io
 import re
 
+from .data.query_data import QueryData
+
 
 class UnexpectedTokenException(Exception):
     def __init__(self, expected_token: str, actual_token: str) -> None:
@@ -9,7 +11,7 @@ class UnexpectedTokenException(Exception):
         self.actual_token = actual_token
 
 
-def parse_insert_query(query: str) -> dict[str, str | list[str] | list[list[str]]]:
+def parse_insert_query(query_data: QueryData) -> QueryData:
     """Parses INSERT-queries and extracts the table, columns, values and column types if present
     Parameter query needs to be lowercase"""
     # TODO: '$' in table/column name doesn't work
@@ -17,10 +19,9 @@ def parse_insert_query(query: str) -> dict[str, str | list[str] | list[list[str]
     # INSERT INTO Cities VALUES ("Paris", "France"), ("Berlin", "Germany");
     # INSERT INTO (Name, Country) VALUES ("Paris", "France");
     # INSERT INTO VALUES ("Paris", "France");
-    query_data = {}
-
     tokens = [
-        token.string for token in tokenize.generate_tokens(io.StringIO(query).readline)
+        token.string
+        for token in tokenize.generate_tokens(io.StringIO(query_data.query).readline)
     ]
     if tokens[0].upper() != "INSERT":
         raise UnexpectedTokenException("INSERT", tokens[0])
@@ -29,14 +30,12 @@ def parse_insert_query(query: str) -> dict[str, str | list[str] | list[list[str]
 
     index = 2
     if tokens[index].upper() != "VALUES" and tokens[index] != "(":
-        query_data["table"], index = parse_table(tokens, index)
+        query_data.table, index = parse_table(tokens, index)
     if tokens[index] == "(":
-        query_data["columns"], index = parse_columns(tokens, index)
+        query_data.columns, index = parse_columns(tokens, index)
     if tokens[index].upper() != "VALUES":
         raise UnexpectedTokenException("VALUES", tokens[index])
-    query_data["values"], query_data["column_types"], index = parse_values(
-        tokens, index + 1
-    )
+    query_data.values, query_data.column_types, index = parse_values(tokens, index + 1)
 
     if index < len(tokens) and tokens[index] != ";" and "".join(tokens[index:]) != "":
         raise UnexpectedTokenException(";", tokens[index])

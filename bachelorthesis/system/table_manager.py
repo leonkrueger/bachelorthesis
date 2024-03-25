@@ -1,6 +1,8 @@
 from typing import Any
-from utils.enums.table_origin import TableOrigin
-from utils.io.sql_handler import SQLHandler
+
+from .data.query_data import QueryData
+from .data.table_origin import TableOrigin
+from .sql_handler import SQLHandler
 
 
 class TableManager:
@@ -8,16 +10,16 @@ class TableManager:
         self.sql_handler = sql_handler
         self.sql_handler.create_internal_tables()
 
-    def create_table(self, query_data: dict[str, Any]) -> None:
+    def create_table(self, query_data: QueryData) -> None:
         """Creates the specified table and adds it to the table registry"""
         self.sql_handler.execute_query(
-            f"INSERT INTO table_registry VALUES ('{query_data['table']}', '{query_data['table_origin'].value}');"
+            f"INSERT INTO table_registry VALUES ('{query_data.table}', '{query_data.table_origin.value}');"
         )
 
         self.sql_handler.create_table(
-            query_data["table"],
-            query_data["columns"],
-            query_data["column_types"],
+            query_data.table,
+            query_data.columns,
+            query_data.column_types,
         )
 
     def check_update_of_table_name(self, current_table_name: str, new_table_name: str):
