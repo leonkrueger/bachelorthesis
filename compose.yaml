@@ -26,7 +26,7 @@ services:
   evaluation:
     container_name: bachelorthesis_leon_krueger_evaluation
     build:
-      dockerfile: ../evaluation/bachelorthesis/Dockerfile
+      dockerfile: ./Evaluation.Dockerfile
     working_dir: /app
     volumes:
      - ./bachelorthesis:/app
