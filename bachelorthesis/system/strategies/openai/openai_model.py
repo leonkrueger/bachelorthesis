@@ -1,5 +1,6 @@
-from openai import OpenAI
 import re
+
+from openai import OpenAI
 
 from ...data.query_data import QueryData
 from ..strategy import Strategy
@@ -32,7 +33,7 @@ class OpenAIModel(Strategy):
             "\n".join(
                 [
                     f"- Table: {table}, Columns: [{', '.join([column[0] for column in columns])}]"
-                    for table, columns in query_data.database_state
+                    for table, columns in query_data.database_state.items()
                 ]
             )
             if len(query_data.database_state) > 0
