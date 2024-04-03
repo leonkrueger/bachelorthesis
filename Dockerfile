@@ -1,3 +1,4 @@
 FROM python:3.10
-RUN pip install mysql-connector-python tabulate torch accelerate langchain transformers openai
+COPY requirements.txt ./
+RUN pip install -r requirements.txt
 CMD ["python3", "main.py"]

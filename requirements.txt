@@ -1,0 +1,7 @@
+mysql-connector-python
+tabulate
+torch
+accelerate
+langchain
+transformers
+openai
