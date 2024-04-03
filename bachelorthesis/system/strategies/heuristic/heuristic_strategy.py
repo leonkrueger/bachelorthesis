@@ -1,15 +1,18 @@
 from typing import Any
 
 from ...data.query_data import QueryData
-
-from ..strategy import Strategy
-from ...console_handler import yes_or_no_question
-from .name_predictor import NamePredictor
 from ...data.table_origin import TableOrigin
+from ..strategy import Strategy
+from .name_predictor import NamePredictor
 
 
 class HeuristicStrategy(Strategy):
-    MINIMAL_COLUMNS_FOUND_RATIO = 0.4
+    MINIMAL_COLUMNS_FOUND_RATIO_RELAXED = 0.4
+    MINIMAL_COLUMNS_FOUND_RATIO_STRICT = 0.7
+
+    # Is filled when the table name is predicted and resetted after the last prediction step for a query
+    # First value is the name of the table, second the column mapping
+    predictions = None
 
     def __init__(self, name_predictor: NamePredictor) -> None:
         super().__init__()
@@ -17,9 +20,18 @@ class HeuristicStrategy(Strategy):
         self.name_predictor = name_predictor
 
     def predict_table_name(self, query_data: QueryData) -> str:
-        return self.map_table_to_database(query_data)[
-            0
-        ]  # TODO: Remove this method and rework class
+        if self.predictions is None:
+            self.predictions = self.map_table_to_database(query_data)
+
+        # TODO: Remove following two lines and change third
+        table_name = self.predictions[0]
+        self.predictions = None
+        return table_name
+
+    def predict_column_mapping(self, query_data: QueryData) -> dict[str, str]:
+        column_mapping = self.predictions[1]
+        self.predictions = None
+        return column_mapping
 
     def map_table_to_database(
         self,
@@ -41,20 +53,16 @@ class HeuristicStrategy(Strategy):
                     query_data, query_data.database_state
                 )
 
-                # If columns fit to a table, ask user for feedback
-                if table_data[
-                    "columns_found_ratio"
-                ] >= self.MINIMAL_COLUMNS_FOUND_RATIO and yes_or_no_question(
-                    f"Found table {table_data['table']} with fitting columns {', '.join(table_data['table_columns'])}. "
-                    "Do you want use this table for insertion?",
-                    False,
+                if (
+                    table_data["columns_found_ratio"]
+                    >= self.MINIMAL_COLUMNS_FOUND_RATIO_STRICT
                 ):
-                    # Use the found table despite having a non-fitting name
-                    return (table_data["table"], table_data["column_mapping"], False)
+                    # Use the found table despite having a non-fitting name if the columns fit really well
+                    return (table_data["table"], table_data["column_mapping"])
                 else:
-                    # Create a new table
+                    # Create a new table else
                     query_data.table_origin = TableOrigin.USER
-                    return (query_data.table, {}, True)
+                    return (query_data.table, {})
             else:
                 # There is at least one table that fit the specified name
                 table_data = self.map_table_to_database_on_columns(
@@ -66,24 +74,22 @@ class HeuristicStrategy(Strategy):
                     },
                 )
 
-                # If columns do not fit to the table, ask user for feedback
-                if table_data[
-                    "columns_found_ratio"
-                ] >= self.MINIMAL_COLUMNS_FOUND_RATIO or yes_or_no_question(
-                    f"Found table {table_data['table']} with columns {', '.join(table_data['table_columns'])}. "
-                    "Do you want use this table for insertion?",
-                    True,
-                ):
-                    # Use the found table if columns fit as well or if user wants to use this table
-                    return (
-                        table_data["table"],
-                        table_data["column_mapping"],
-                        False,
-                    )
-                else:
-                    # Create a new table
-                    query_data.table_origin = TableOrigin.USER
-                    return (query_data.table, {}, True)
+                # Use the table, with the best fitting columns
+                return (table_data["table"], table_data["column_mapping"])
+
+                # if table_data[
+                #     "columns_found_ratio"
+                # ] >= self.MINIMAL_COLUMNS_FOUND_RATIO_RELAXED:
+                #     # Use the found table if columns fit as well
+                #     return (
+                #         table_data["table"],
+                #         table_data["column_mapping"],
+                #         False,
+                #     )
+                # else:
+                #     # Create a new table
+                #     query_data.table_origin = TableOrigin.USER
+                #     return (query_data.table, {}, True)
 
         else:
             # No table name specified in the query
@@ -91,20 +97,19 @@ class HeuristicStrategy(Strategy):
                 query_data, query_data.database_state
             )
 
-            if table_data["columns_found_ratio"] >= self.MINIMAL_COLUMNS_FOUND_RATIO:
+            if (
+                table_data["columns_found_ratio"]
+                >= self.MINIMAL_COLUMNS_FOUND_RATIO_RELAXED
+            ):
                 # Columns fit to a table in the database
-                return (
-                    table_data["table"],
-                    table_data["column_mapping"],
-                    False,
-                )
+                return (table_data["table"], table_data["column_mapping"])
             else:
                 # Columns do not fit a table in the database
                 predicted_table_name = self.name_predictor.predict_table_name(
                     query_data.columns
                 )
                 query_data.table_origin = TableOrigin.PREDICTION
-                return (predicted_table_name, {}, True)
+                return (predicted_table_name, {})
 
     def get_fitting_tables(self, db_tables: list[str], table: str) -> list[str]:
         """Returns all tables whose name fits the specified table."""

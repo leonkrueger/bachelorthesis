@@ -1,8 +1,7 @@
 from .data.query_data import QueryData
-from .strategies.strategy import Strategy
-from .strategies.openai.openai_model import OpenAIModel
 from .insert_query_parser import parse_insert_query
 from .sql_handler import SQLHandler
+from .strategies.strategy import Strategy
 from .table_manager import TableManager
 
 
