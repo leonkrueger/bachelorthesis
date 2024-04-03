@@ -20,10 +20,12 @@ conn = mysql.connector.connect(
 sql_handler = SQLHandler(conn)
 table_manager = TableManager(sql_handler)
 
-strategy = HeuristicStrategy(NamePredictor(os.getenv("HF_API_TOKEN")))
-# strategy = OpenAIModel(os.getenv("OPENAI_API_KEY"), os.getenv("OPENAI_ORG_ID"))
-
-insert_query_handler = InsertQueryHandler(sql_handler, table_manager, strategy)
+strategies = {
+    "Llama2_finetuned": None,
+    "Llama2": None,
+    "GPT4": OpenAIModel(os.getenv("OPENAI_API_KEY"), os.getenv("OPENAI_ORG_ID")),
+    "Heuristics": HeuristicStrategy(NamePredictor(os.getenv("HF_API_TOKEN"))),
+}
 
 # Switch if necessary
 evaluation_folder = "bird"
@@ -99,25 +101,33 @@ def run_experiment(folder: str) -> None:
         if os.path.isdir(inserts_file_path) or not inserts_file_path.endswith(".sql"):
             continue
 
-        # Return if experiment was already run
-        results_file_path = inserts_file_path[:-4].replace("input", "results") + ".json"
-        with open(results_file_path, encoding="utf-8") as results_file:
-            if results_file.read().strip() != "":
-                return
+        for strategy in strategies:
+            results_file_path = os.path.join(
+                folder, strategy, path[:-4].replace("input", "results") + ".json"
+            )
 
-        with open(inserts_file_path, encoding="utf-8") as input_file:
-            queries = input_file.read().split(";")
-        for query in queries:
-            query = query.strip()
-            if query == "":
-                continue
-            try:
-                insert_query_handler.handle_insert_query(query)
-            except Exception as e:
-                print(f"Error while executing query: {query}")
-                errors_file.write(f"Error {e} while executing query: {query}\n")
+            # Continue if experiment was already run
+            with open(results_file_path, encoding="utf-8") as results_file:
+                if results_file.read().strip() != "":
+                    continue
 
-        save_results_and_clean_database(results_file_path)
+            insert_query_handler = InsertQueryHandler(
+                sql_handler, table_manager, strategies[strategy]
+            )
+
+            with open(inserts_file_path, encoding="utf-8") as input_file:
+                queries = input_file.read().split(";")
+            for query in queries:
+                query = query.strip()
+                if query == "":
+                    continue
+                try:
+                    insert_query_handler.handle_insert_query(query)
+                except Exception as e:
+                    print(f"Error while executing query: {query}")
+                    errors_file.write(f"Error {e} while executing query: {query}\n")
+
+            save_results_and_clean_database(results_file_path)
 
 
 def run_experiments_for_database(folder: str) -> None:
