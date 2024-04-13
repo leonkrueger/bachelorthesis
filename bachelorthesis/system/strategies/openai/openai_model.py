@@ -17,7 +17,7 @@ class OpenAIModel(Strategy):
         self.model = model
 
     def run_prompt(self, messages: list[dict[str, str]], max_tokens: int) -> str:
-        """Runs a prompt an OpenAI chat model and returns its answer"""
+        """Runs a prompt on an OpenAI chat model and returns its answer"""
         return (
             self.client.chat.completions.create(
                 model=self.model,
@@ -60,6 +60,6 @@ class OpenAIModel(Strategy):
                         f"Database State:\n{database_string}",
                     },
                 ],
-                5,
+                10,
             ),
         ).group("table")

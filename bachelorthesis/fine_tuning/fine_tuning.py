@@ -39,7 +39,7 @@ def generate_and_tokenize_prompt(data_point):
 HF_API_TOKEN = "YOUR_HF_API_TOKEN"
 
 
-model_id = "meta-llama/Llama-2-7b-hf"  # "tiiuae/falcon-7b"
+model_id = "meta-llama/Llama-2-7b-hf"
 
 # Load model and prepare for QLoRA
 bnb_config = BitsAndBytesConfig(
@@ -63,11 +63,11 @@ tokenizer.pad_token = tokenizer.eos_token
 
 # Configure LoRA
 config = LoraConfig(
-    # r=16,
-    # lora_alpha=32,
+    r=16,
+    lora_alpha=32,
     target_modules=["query_key_value"],
-    # lora_dropout=0.05,
-    # bias="none",
+    lora_dropout=0.05,
+    bias="none",
     task_type="CAUSAL_LM",
 )
 model = get_peft_model(model, config)
@@ -79,15 +79,22 @@ dataset_name = os.path.join(
 dataset = load_dataset("json", data_files=dataset_name, split="train")
 dataset = dataset.shuffle().map(generate_and_tokenize_prompt)
 
+output_dir = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)), "output", "fine_tuned_model"
+)
+os.makedirs(output_dir)
+
 # Configure training arguments
 training_args = transformers.TrainingArguments(
     auto_find_batch_size=True,
-    num_train_epochs=4,
+    num_train_epochs=1,  # TODO
     learning_rate=2e-4,
     bf16=True,
-    save_total_limit=4,
+    save_total_limit=1,  # TODO
     logging_steps=10,
-    output_dir=os.path.join(os.path.dirname(os.path.realpath(__file__)), "output"),
+    output_dir=os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), "output", "steps"
+    ),
     save_strategy="epoch",
 )
 
@@ -100,3 +107,6 @@ trainer = transformers.Trainer(
 )
 model.config.use_cache = False
 trainer.train()
+
+# Save model
+trainer.model.save_pretrained(output_dir)
