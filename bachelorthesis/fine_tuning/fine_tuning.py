@@ -65,7 +65,6 @@ tokenizer.pad_token = tokenizer.eos_token
 config = LoraConfig(
     r=16,
     lora_alpha=32,
-    target_modules=["query_key_value"],
     lora_dropout=0.05,
     bias="none",
     task_type="CAUSAL_LM",
@@ -88,9 +87,9 @@ os.makedirs(output_dir)
 training_args = transformers.TrainingArguments(
     auto_find_batch_size=True,
     num_train_epochs=1,  # TODO
-    learning_rate=2e-4,
+    # learning_rate=2e-4,
     bf16=True,
-    save_total_limit=1,  # TODO
+    save_total_limit=4,  # TODO
     logging_steps=10,
     output_dir=os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "output", "steps"
