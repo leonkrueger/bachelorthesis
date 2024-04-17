@@ -1,11 +1,18 @@
 import re
 from enum import Enum
 
+import torch
 from huggingface_hub import InferenceClient
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+from peft import PeftModel
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    BitsAndBytesConfig,
+    pipeline,
+)
 
 from ...data.query_data import QueryData
 from ..strategy import Strategy
@@ -30,16 +37,25 @@ class LLama2Model(Strategy):
         if model_type == LLama2ModelType.NON_FINE_TUNED_API:
             self.client = InferenceClient(token=huggingface_api_token, timeout=300)
         else:
+            tokenizer = AutoTokenizer.from_pretrained(self.model_name)
             if model_type == LLama2ModelType.NON_FINE_TUNED_LOCAL:
-                tokenizer = AutoTokenizer.from_pretrained(self.model_name)
                 model = AutoModelForCausalLM.from_pretrained(
                     self.model_name, device_map="auto"
                 )
             else:
-                tokenizer = AutoTokenizer.from_pretrained(fine_tuned_model_dir)
-                model = AutoModelForCausalLM.from_pretrained(
-                    fine_tuned_model_dir, load_in_4bit=True, device_map="auto"
+                bnb_config = BitsAndBytesConfig(
+                    load_in_4bit=True,
+                    load_4bit_use_double_quant=True,
+                    bnb_4bit_quant_type="nf4",
+                    bnb_4bit_compute_dtype=torch.bfloat16,
                 )
+                base_model = AutoModelForCausalLM.from_pretrained(
+                    self.model_name,
+                    quantization_config=bnb_config,
+                    device_map="auto",
+                )
+                model = PeftModel.from_pretrained(base_model, fine_tuned_model_dir)
+                model = model.merge_and_unload()
 
             # tokenizer.pad_token = tokenizer.unk_token
             # model.config.pad_token_id = tokenizer.pad_token_id
