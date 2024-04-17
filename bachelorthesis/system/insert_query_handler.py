@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Any
 from .data.query_data import QueryData
 from .insert_query_parser import parse_insert_query
 from .sql_handler import SQLHandler
@@ -14,7 +14,7 @@ class InsertQueryHandler:
         self.table_manager = table_manager
         self.strategy = strategy
 
-    def handle_insert_query(self, query: str) -> List[Tuple[str | int | float, ...]]:
+    def handle_insert_query(self, query: str) -> List[Tuple[Any, ...]]:
         """Collects all required information for the execution of the insert query and executes it on the database"""
 
         # Parse the query of the user and collect information needed for execution

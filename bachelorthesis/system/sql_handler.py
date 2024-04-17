@@ -1,7 +1,7 @@
 from mysql.connector import MySQLConnection
 
 from .data.table_origin import TableOrigin
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Any
 
 
 class SQLHandler:
@@ -16,7 +16,7 @@ class SQLHandler:
 
     def execute_query(
         self, query: str, params: Tuple[str, ...] = ()
-    ) -> Tuple[List[Tuple[str | int | float, ...]], int]:
+    ) -> Tuple[List[Tuple[Any, ...]], int]:
         """Executes the query with the given parameters on the database
         Returns the result of the query and the value of the automatically incremented id
         """
