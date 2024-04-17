@@ -5,7 +5,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 from huggingface_hub import InferenceClient
 
 
-USE_LOCAL_MODEL = False
+USE_LOCAL_MODEL = True
 
 
 class NamePredictor:

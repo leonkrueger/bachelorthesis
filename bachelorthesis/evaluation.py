@@ -8,6 +8,7 @@ from system.strategies.heuristic.heuristic_strategy import HeuristicStrategy
 from system.strategies.heuristic.name_predictor import NamePredictor
 from system.strategies.openai.openai_model import OpenAIModel
 from system.table_manager import TableManager
+from system.strategies.llama2.llama2_model import LLama2Model, LLama2ModelType
 
 # Create a database connection
 conn = mysql.connector.connect(
@@ -23,17 +24,19 @@ table_manager = TableManager(sql_handler)
 strategies = {
     "Llama2_finetuned": None,
     "Llama2": None,
-    "GPT4": OpenAIModel(os.getenv("OPENAI_API_KEY"), os.getenv("OPENAI_ORG_ID")),
+    "GPT4": None, # OpenAIModel(os.getenv("OPENAI_API_KEY"), os.getenv("OPENAI_ORG_ID")),
     "Heuristics": HeuristicStrategy(NamePredictor(os.getenv("HF_API_TOKEN"))),
 }
 
 # Switch if necessary
-evaluation_folder = "bird"
+evaluation_folder = "data"
 
 errors_file_path = os.path.join("/app", "evaluation", "errors.txt")
 errors_file = open(errors_file_path, "w", encoding="utf-8")
 
 evaluation_folder = os.path.join("/app", "evaluation", evaluation_folder)
+
+sql_handler.reset_database()
 
 
 def save_results_and_clean_database(results_file_path: str) -> None:
@@ -79,7 +82,7 @@ def run_gold_standard(folder: str) -> None:
     with open(
         os.path.join(folder, "gold_standard_input.sql"), encoding="utf-8"
     ) as inserts_file:
-        queries = inserts_file.read().split(";")
+        queries = inserts_file.read().split(";\n")
 
     for query in queries:
         query = query.strip()
@@ -101,9 +104,12 @@ def run_experiment(folder: str) -> None:
         if os.path.isdir(inserts_file_path) or not inserts_file_path.endswith(".sql"):
             continue
 
-        for strategy in strategies:
+        for strategy_name, strategy in strategies.items():
+            if strategy is None:
+                continue
+
             results_file_path = os.path.join(
-                folder, strategy, path[:-4].replace("input", "results") + ".json"
+                folder, strategy_name, path[:-4].replace("input", "results") + ".json"
             )
 
             # Continue if experiment was already run
@@ -112,11 +118,11 @@ def run_experiment(folder: str) -> None:
                     continue
 
             insert_query_handler = InsertQueryHandler(
-                sql_handler, table_manager, strategies[strategy]
+                sql_handler, table_manager, strategy
             )
 
             with open(inserts_file_path, encoding="utf-8") as input_file:
-                queries = input_file.read().split(";")
+                queries = input_file.read().split(";\n")
             for query in queries:
                 query = query.strip()
                 if query == "":
