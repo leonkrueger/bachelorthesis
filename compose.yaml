@@ -35,6 +35,28 @@ services:
       - bachelorthesis_leon_krueger_network
     depends_on:
       - mysql
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            capabilities: 
+              - gpu
+              - utility
+              - compute
+  # finetuning:
+  #   container_name: bachelorthesis_leon_krueger_finetuning
+  #   build:
+  #     dockerfile: ./Finetuning.Dockerfile
+  #   working_dir: /app
+  #   volumes:
+  #    - ./bachelorthesis/fine_tuning:/app
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #         - driver: nvidia
+  #           capabilities: [gpu]
 
 networks:
   bachelorthesis_leon_krueger_network:
