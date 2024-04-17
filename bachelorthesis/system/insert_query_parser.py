@@ -1,6 +1,6 @@
-import tokenize
 import io
 import re
+import tokenize
 
 from .data.query_data import QueryData
 
@@ -162,7 +162,7 @@ def get_column_type(value: str) -> str:
         return "DATETIME"
     elif re.match(r"[\"\'][0-9]{4}-[0-9]{2}-[0-9]{2}[\"\']", value):
         return "DATE"
-    elif value.startswith('"') or value.startswith("'"):
+    elif value.startswith('"') or value.startswith("'") or value == "NULL":
         return "VARCHAR(255)"
     elif "." in value:
         return "DOUBLE"
