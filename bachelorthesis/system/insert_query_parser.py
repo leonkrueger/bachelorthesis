@@ -2,6 +2,7 @@ import io
 import re
 import tokenize
 
+from typing import List, Tuple
 from .data.query_data import QueryData
 
 
@@ -45,11 +46,11 @@ def parse_insert_query(query_data: QueryData) -> QueryData:
     return query_data
 
 
-def parse_table(tokens: list[str], index: int) -> tuple[str, int]:
+def parse_table(tokens: List[str], index: int) -> Tuple[str, int]:
     return (tokens[index], index + 1)
 
 
-def parse_columns(tokens: list[str], index: int) -> tuple[list[str], int]:
+def parse_columns(tokens: List[str], index: int) -> Tuple[List[str], int]:
     if tokens[index] != "(":
         raise UnexpectedTokenException("(", tokens[index])
 
@@ -69,8 +70,8 @@ def parse_columns(tokens: list[str], index: int) -> tuple[list[str], int]:
 
 
 def parse_values(
-    tokens: list[str], index: int
-) -> tuple[list[list[str]], list[str], int]:
+    tokens: List[str], index: int
+) -> Tuple[List[List[str]], List[str], int]:
     values = []
     row_values, column_types, index = parse_values_for_row(tokens, index)
     values.append(row_values)
@@ -83,8 +84,8 @@ def parse_values(
 
 
 def parse_values_for_row(
-    tokens: list[str], index: int
-) -> tuple[list[str], list[str], int]:
+    tokens: List[str], index: int
+) -> Tuple[List[str], List[str], int]:
     if tokens[index] != "(":
         raise UnexpectedTokenException("(", tokens[index])
 
@@ -105,7 +106,7 @@ def parse_values_for_row(
     return (values, column_types, index + 1)
 
 
-def parse_single_value(tokens: list[str], index: int) -> tuple[str, str, int]:
+def parse_single_value(tokens: List[str], index: int) -> Tuple[str, str, int]:
     # Replace call
     if tokens[index] == "replace":
         value, index = parse_replace_function(tokens, index + 1)
@@ -128,7 +129,7 @@ def parse_single_value(tokens: list[str], index: int) -> tuple[str, str, int]:
     return (tokens[index], get_column_type(tokens[index]), index + 1)
 
 
-def parse_replace_function(tokens: list[str], index: int) -> tuple[str, int]:
+def parse_replace_function(tokens: List[str], index: int) -> Tuple[str, int]:
     if tokens[index] == "(":
         value, index = parse_replace_function_helper(tokens, index + 1, 1)
         return ("(" + value, index)
@@ -137,8 +138,8 @@ def parse_replace_function(tokens: list[str], index: int) -> tuple[str, int]:
 
 
 def parse_replace_function_helper(
-    tokens: list[str], index: int, open_parentheses: int
-) -> tuple[str, int]:
+    tokens: List[str], index: int, open_parentheses: int
+) -> Tuple[str, int]:
     if open_parentheses == 0:
         return ("", index)
 

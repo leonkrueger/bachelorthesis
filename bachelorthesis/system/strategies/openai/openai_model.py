@@ -1,6 +1,7 @@
 import re
 
 from openai import OpenAI
+from typing import List, Dict
 
 from ...data.query_data import QueryData
 from ..strategy import Strategy
@@ -16,7 +17,7 @@ class OpenAIModel(Strategy):
         self.client = OpenAI(openai_api_key, openai_org_id)
         self.model = model
 
-    def run_prompt(self, messages: list[dict[str, str]], max_tokens: int) -> str:
+    def run_prompt(self, messages: List[Dict[str, str]], max_tokens: int) -> str:
         """Runs a prompt on an OpenAI chat model and returns its answer"""
         return (
             self.client.chat.completions.create(

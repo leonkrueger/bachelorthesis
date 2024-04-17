@@ -1,6 +1,7 @@
 from mysql.connector import MySQLConnection
 
 from .data.table_origin import TableOrigin
+from typing import List, Tuple, Dict
 
 
 class SQLHandler:
@@ -14,8 +15,8 @@ class SQLHandler:
         }
 
     def execute_query(
-        self, query: str, params: tuple[str, ...] = ()
-    ) -> tuple[list[tuple[str | int | float, ...]], int]:
+        self, query: str, params: Tuple[str, ...] = ()
+    ) -> Tuple[List[Tuple[str | int | float, ...]], int]:
         """Executes the query with the given parameters on the database
         Returns the result of the query and the value of the automatically incremented id
         """
@@ -28,7 +29,7 @@ class SQLHandler:
         cursor.close()
         return output, auto_increment_id
 
-    def get_all_tables(self) -> list[str]:
+    def get_all_tables(self) -> List[str]:
         """Returns all table names of the database"""
         query = "SHOW TABLES;"
         output = self.execute_query(query)
@@ -39,14 +40,14 @@ class SQLHandler:
         ]
         return tables
 
-    def get_all_columns(self, table_name: str) -> list[tuple[str, str]]:
+    def get_all_columns(self, table_name: str) -> List[Tuple[str, str]]:
         """Returns all column names and types of the given table"""
         query = f"SHOW COLUMNS FROM {table_name};"
         output = self.execute_query(query)
         cols = [(col[0], col[1]) for col in output[0]]
         return cols
 
-    def get_database_state(self) -> dict[str, list[str]]:
+    def get_database_state(self) -> Dict[str, List[str]]:
         """Returns a dictionary containing all tables and its columns"""
         return {
             table: [column[0] for column in self.get_all_columns(table)]
@@ -54,7 +55,7 @@ class SQLHandler:
         }
 
     def create_table(
-        self, table_name: str, column_names: list[str], column_types: list[str]
+        self, table_name: str, column_names: List[str], column_types: List[str]
     ) -> None:
         """Creates the specified table"""
         query = f"CREATE TABLE {table_name} ({', '.join([f'{column[0]} {column[1]}' for column in zip(column_names, column_types)])});"

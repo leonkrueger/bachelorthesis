@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Dict, List, Tuple
 
 from ...data.query_data import QueryData
 from ...data.table_origin import TableOrigin
@@ -28,7 +28,7 @@ class HeuristicStrategy(Strategy):
         self.predictions = None
         return table_name
 
-    def predict_column_mapping(self, query_data: QueryData) -> dict[str, str]:
+    def predict_column_mapping(self, query_data: QueryData) -> Dict[str, str]:
         column_mapping = self.predictions[1]
         self.predictions = None
         return column_mapping
@@ -36,7 +36,7 @@ class HeuristicStrategy(Strategy):
     def map_table_to_database(
         self,
         query_data: QueryData,
-    ) -> tuple[str, dict[str, str], bool]:
+    ) -> Tuple[str, Dict[str, str], bool]:
         """Find the database table that fits the specified arguments in the query best.
         If there is no table found, the table specified in the query is returned.
         The second returned value is a mapping of the columns in the query to the columns in the table.
@@ -111,15 +111,15 @@ class HeuristicStrategy(Strategy):
                 query_data.table_origin = TableOrigin.PREDICTION
                 return (predicted_table_name, {})
 
-    def get_fitting_tables(self, db_tables: list[str], table: str) -> list[str]:
+    def get_fitting_tables(self, db_tables: List[str], table: str) -> List[str]:
         """Returns all tables whose name fits the specified table."""
         return [db_table for db_table in db_tables if table == db_table]
 
     def map_table_to_database_on_columns(
         self,
         query_data: QueryData,
-        tables_to_consider: dict[str, list[str]],
-    ) -> dict[str, Any]:
+        tables_to_consider: Dict[str, List[str]],
+    ) -> Dict[str, Any]:
         """Find the one out of the preselected database tables that fits the specified columns best."""
         return self.best_fitting_columns(
             tables_to_consider,
@@ -129,10 +129,10 @@ class HeuristicStrategy(Strategy):
 
     def best_fitting_columns(
         self,
-        db_tables: dict[str, list[str]],
-        query_columns: list[str],
-        # column_types: list[str],
-    ) -> dict[str, Any]:
+        db_tables: Dict[str, List[str]],
+        query_columns: List[str],
+        # column_types: List[str],
+    ) -> Dict[str, Any]:
         """Checks all tables of the database for the one that contains most of the specified columns.
         Returns a dict with the required information of the best fitting table"""
         best_table_data = {

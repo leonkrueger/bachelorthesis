@@ -1,15 +1,18 @@
-from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain
-from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
-from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
-from huggingface_hub import InferenceClient
+from typing import List
 
+import torch
+from huggingface_hub import InferenceClient
+from langchain.chains import LLMChain
+from langchain.prompts import PromptTemplate
+from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
 USE_LOCAL_MODEL = True
 
 
 class NamePredictor:
     def __init__(self, HF_API_TOKEN: str = "") -> None:
+        print(torch.cuda.is_available())
         self.model_name = "mistralai/Mistral-7B-Instruct-v0.1"
         self.max_new_tokens = 1
 
@@ -37,7 +40,7 @@ class NamePredictor:
         else:
             self.client = InferenceClient(token=HF_API_TOKEN, timeout=300)
 
-    def predict_table_name(self, columns: list[str]) -> str:
+    def predict_table_name(self, columns: List[str]) -> str:
         prompt_text = """[INST]Given the column names in a database, predict a suitable name for the table that likely represents the data described by these columns.
 
         Column names: language_id, language_code, language_name
