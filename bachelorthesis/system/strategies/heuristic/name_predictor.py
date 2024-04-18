@@ -46,6 +46,9 @@ class NamePredictor:
         Column names: language_id, language_code, language_name
         Table name:[/INST] language
 
+        [Inst]Column names: ID, Name, CountryCode, District, Population
+        Table name:[/INST] City
+        
         [Inst]Column names: {columns}
         Table name:[/INST]"""
         joined_columns = ", ".join(columns)
@@ -54,7 +57,9 @@ class NamePredictor:
             prompt = PromptTemplate(template=prompt_text, input_variables=["columns"])
             llm_chain = LLMChain(prompt=prompt, llm=self.llm)
             args = {"columns": joined_columns}
-            return llm_chain.run(args).strip()
+            return llm_chain.invoke(joined_columns)["text"][
+                len(prompt_text.replace("{columns}", joined_columns)) :
+            ].strip()
         else:
             prompt_text = prompt_text.replace("{columns}", joined_columns)
             answer = self.client.text_generation(
@@ -62,4 +67,4 @@ class NamePredictor:
                 max_new_tokens=self.max_new_tokens,
                 model=self.model_name,
             )
-            return answer.removeprefix(" ")
+            return answer.strip()
