@@ -1,4 +1,5 @@
-from typing import List, Tuple, Any
+from typing import Any, List, Tuple
+
 from .data.query_data import QueryData
 from .insert_query_parser import parse_insert_query
 from .sql_handler import SQLHandler
@@ -48,10 +49,11 @@ class InsertQueryHandler:
                     )
 
         # Create SQL-query that is run on the database
+        columns_string = ", ".join([f"`{column}`" for column in query_data.columns])
         row_values_strings = [
             f"({', '.join(row_values)})" for row_values in query_data.values
         ]
-        constructed_query = f"INSERT INTO {query_data.table} ({', '.join(query_data.columns)}) VALUES {', '.join(row_values_strings)};"
+        constructed_query = f"INSERT INTO `{query_data.table}` ({columns_string}) VALUES {', '.join(row_values_strings)};"
 
         # Execute constructed query
         return self.sql_handler.execute_query(constructed_query)[0]
