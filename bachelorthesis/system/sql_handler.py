@@ -1,7 +1,8 @@
+from typing import Any, Dict, List, Tuple
+
 from mysql.connector import MySQLConnection
 
 from .data.table_origin import TableOrigin
-from typing import List, Tuple, Dict, Any
 
 
 class SQLHandler:
@@ -10,7 +11,7 @@ class SQLHandler:
         """All tables used for the internal database management"""
         self.internal_tables = {
             "table_registry": f"""CREATE TABLE IF NOT EXISTS table_registry(
-                name VARCHAR(255),
+                name VARCHAR(1023),
                 name_origin ENUM({", ".join([f"'{table_origin.value}'" for table_origin in TableOrigin])}));"""
         }
 
