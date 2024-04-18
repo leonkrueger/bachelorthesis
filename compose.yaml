@@ -44,19 +44,22 @@ services:
               - gpu
               - utility
               - compute
-  # finetuning:
-  #   container_name: bachelorthesis_leon_krueger_finetuning
-  #   build:
-  #     dockerfile: ./Finetuning.Dockerfile
-  #   working_dir: /app
-  #   volumes:
-  #    - ./bachelorthesis/fine_tuning:/app
-  #   deploy:
-  #     resources:
-  #       reservations:
-  #         devices:
-  #         - driver: nvidia
-  #           capabilities: [gpu]
+  finetuning:
+    container_name: bachelorthesis_leon_krueger_finetuning
+    build:
+      dockerfile: ./Finetuning.Dockerfile
+    working_dir: /app
+    volumes:
+     - ./bachelorthesis/fine_tuning:/app
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            capabilities: 
+              - gpu
+              - utility
+              - compute
 
 networks:
   bachelorthesis_leon_krueger_network:
