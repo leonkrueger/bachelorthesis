@@ -41,6 +41,8 @@ HF_API_TOKEN = "YOUR_HF_API_TOKEN"
 
 model_id = "meta-llama/Llama-2-7b-hf"
 
+# torch.backends.cuda.matmul.allow_tf32 = True
+
 # Load model and prepare for QLoRA
 bnb_config = BitsAndBytesConfig(
     load_in_4bit=True,
@@ -50,7 +52,7 @@ bnb_config = BitsAndBytesConfig(
 )
 model = AutoModelForCausalLM.from_pretrained(
     model_id,
-    device_map="auto",
+    device_map="cpu",
     trust_remote_code=True,
     quantization_config=bnb_config,
     token=HF_API_TOKEN,
@@ -81,20 +83,26 @@ dataset = dataset.shuffle().map(generate_and_tokenize_prompt)
 output_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), "output", "fine_tuned_model"
 )
-os.makedirs(output_dir)
+os.makedirs(output_dir, exist_ok=True)
 
 # Configure training arguments
 training_args = transformers.TrainingArguments(
-    auto_find_batch_size=True,
+    # auto_find_batch_size=True,
+    per_device_train_batch_size=4,
+    gradient_accumulation_steps=1,
+    gradient_checkpointing=True,
     num_train_epochs=1,  # TODO
     # learning_rate=2e-4,
     bf16=True,
-    save_total_limit=4,  # TODO
-    logging_steps=10,
+    # tf32=True,
+    # optim="adafactor",
+    # optim="paged_adamw_32bit",
+    logging_steps=100,
+    save_total_limit=1,  # TODO
+    save_strategy="epoch",
     output_dir=os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "output", "steps"
     ),
-    save_strategy="epoch",
 )
 
 # Train model

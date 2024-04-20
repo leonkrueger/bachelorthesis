@@ -31,6 +31,8 @@ services:
     volumes:
      - ./bachelorthesis:/app
      - ../evaluation/bachelorthesis:/app/evaluation
+    env_file:
+      - ./.env
     networks:
       - bachelorthesis_leon_krueger_network
     depends_on:

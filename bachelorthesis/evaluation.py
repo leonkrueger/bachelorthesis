@@ -23,9 +23,12 @@ table_manager = TableManager(sql_handler)
 
 strategies = {
     "Llama2_finetuned": None,
-    "Llama2": None,
+    "Llama2": LLama2Model(
+        LLama2ModelType.NON_FINE_TUNED_LOCAL,
+        huggingface_api_token=os.getenv("HF_API_TOKEN"),
+    ),
     "GPT4": None,  # OpenAIModel(os.getenv("OPENAI_API_KEY"), os.getenv("OPENAI_ORG_ID")),
-    "Heuristics": HeuristicStrategy(NamePredictor(os.getenv("HF_API_TOKEN"))),
+    "Heuristics": None,  # HeuristicStrategy(NamePredictor(os.getenv("HF_API_TOKEN"))),
 }
 
 # Switch if necessary

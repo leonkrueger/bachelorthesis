@@ -1,4 +1,5 @@
 import re
+import time
 from enum import Enum
 
 import torch
@@ -33,14 +34,17 @@ class LLama2Model(Strategy):
     ) -> None:
         self.model_name = "meta-llama/Llama-2-7b-hf"
         self.model_type = model_type
+        self.max_new_tokens = 10
 
         if model_type == LLama2ModelType.NON_FINE_TUNED_API:
             self.client = InferenceClient(token=huggingface_api_token, timeout=300)
         else:
-            tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+            tokenizer = AutoTokenizer.from_pretrained(
+                self.model_name, token=huggingface_api_token
+            )
             if model_type == LLama2ModelType.NON_FINE_TUNED_LOCAL:
                 model = AutoModelForCausalLM.from_pretrained(
-                    self.model_name, device_map="auto"
+                    self.model_name, token=huggingface_api_token, device_map="auto"
                 )
             else:
                 bnb_config = BitsAndBytesConfig(
@@ -51,6 +55,7 @@ class LLama2Model(Strategy):
                 )
                 base_model = AutoModelForCausalLM.from_pretrained(
                     self.model_name,
+                    token=huggingface_api_token,
                     quantization_config=bnb_config,
                     device_map="auto",
                 )
@@ -73,12 +78,13 @@ class LLama2Model(Strategy):
             )
             self.llm = HuggingFacePipeline(pipeline=pipe)
 
-    def run_prompt(self, prompt_text: str, max_tokens: int) -> str:
+    def run_prompt(self, prompt_text: str) -> str:
         """Runs a prompt on a Llama2 model and returns its answer"""
         if self.model_type == LLama2ModelType.NON_FINE_TUNED_API:
+            time.sleep(5)
             return self.client.text_generation(
                 prompt_text,
-                max_new_tokens=max_tokens,
+                max_new_tokens=self.max_new_tokens,
                 model=self.model_name,
             ).strip()
         else:
@@ -106,10 +112,9 @@ class LLama2Model(Strategy):
                 "You should then predict your result based on the available information. "
                 "You give the output in the form 'Table: {table_name}'. If there is a suitable table in the database, "
                 "you replace '{table_name}' with its name. Else, you replace '{table_name}' with a suitable name for a database table. "
-                "You don't give any explanation for your result.",
+                "You don't give any explanation for your result."
                 "Predict the table for this example:\n"
                 f"Query: {query_data.query}\n"
                 f"Database State:\n{database_string}",
-                10,
             ),
         ).group("table")
