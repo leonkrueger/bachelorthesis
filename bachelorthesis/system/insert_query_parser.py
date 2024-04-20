@@ -90,7 +90,7 @@ def parse_values(
     row_values, column_types, index = parse_values_for_row(tokens, index)
     values.append(row_values)
 
-    while tokens[index] == ",":
+    while index < len(tokens) and tokens[index] == ",":
         row_values, index = parse_values_for_row(tokens, index + 1)
         values.append(row_values)
 

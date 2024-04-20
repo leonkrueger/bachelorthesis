@@ -6,9 +6,9 @@ from system.insert_query_handler import InsertQueryHandler
 from system.sql_handler import SQLHandler
 from system.strategies.heuristic.heuristic_strategy import HeuristicStrategy
 from system.strategies.heuristic.name_predictor import NamePredictor
+from system.strategies.llama2.llama2_model import LLama2Model, LLama2ModelType
 from system.strategies.openai.openai_model import OpenAIModel
 from system.table_manager import TableManager
-from system.strategies.llama2.llama2_model import LLama2Model, LLama2ModelType
 
 # Create a database connection
 conn = mysql.connector.connect(
@@ -24,7 +24,7 @@ table_manager = TableManager(sql_handler)
 strategies = {
     "Llama2_finetuned": None,
     "Llama2": None,
-    "GPT4": None, # OpenAIModel(os.getenv("OPENAI_API_KEY"), os.getenv("OPENAI_ORG_ID")),
+    "GPT4": None,  # OpenAIModel(os.getenv("OPENAI_API_KEY"), os.getenv("OPENAI_ORG_ID")),
     "Heuristics": HeuristicStrategy(NamePredictor(os.getenv("HF_API_TOKEN"))),
 }
 
@@ -42,6 +42,7 @@ sql_handler.reset_database()
 def save_results_and_clean_database(results_file_path: str) -> None:
     """Saves the database contents to a json-file"""
     results = {}
+    print(f"Started evaluating {results_file_path}.")
 
     for table in sql_handler.get_all_tables():
         query = f"SELECT * FROM {table};"

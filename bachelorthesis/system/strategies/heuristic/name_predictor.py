@@ -17,9 +17,11 @@ class NamePredictor:
         self.max_new_tokens = 1
 
         if USE_LOCAL_MODEL:
-            tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+            tokenizer = AutoTokenizer.from_pretrained(
+                self.model_name, token=HF_API_TOKEN
+            )
             model = AutoModelForCausalLM.from_pretrained(
-                self.model_name, device_map="auto"
+                self.model_name, token=HF_API_TOKEN, device_map="auto"
             )
 
             tokenizer.pad_token = tokenizer.unk_token
