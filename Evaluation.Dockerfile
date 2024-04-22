@@ -12,7 +12,5 @@ RUN python3 -m pip install --no-cache-dir --upgrade pip
 COPY requirements.txt ./
 RUN pip install -r requirements.txt
 
-RUN python3 -c 'from transformers import AutoTokenizer, AutoModelForCausalLM; AutoTokenizer.from_pretrained("meta-llama/Llama-2-7b-hf", token="YOUR_HF_API_TOKEN"); AutoModelForCausalLM.from_pretrained("meta-llama/Llama-2-7b-hf", token="YOUR_HF_API_TOKEN")'
-
 # Execute evaluation script
 CMD ["python3", "evaluation.py"]

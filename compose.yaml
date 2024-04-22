@@ -2,6 +2,7 @@ services:
   mysql:
     image: mysql
     container_name: bachelorthesis_leon_krueger_mysql
+    command: --sql_mode=""
     ports:
       - 3306:3306
     environment:

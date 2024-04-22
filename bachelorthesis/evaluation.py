@@ -22,13 +22,13 @@ sql_handler = SQLHandler(conn)
 table_manager = TableManager(sql_handler)
 
 strategies = {
-    "Llama2_finetuned": None,
-    "Llama2": LLama2Model(
+    "Llama2_finetuned": lambda: None,
+    "Llama2": lambda: LLama2Model(
         LLama2ModelType.NON_FINE_TUNED_LOCAL,
         huggingface_api_token=os.getenv("HF_API_TOKEN"),
     ),
-    "GPT4": None,  # OpenAIModel(os.getenv("OPENAI_API_KEY"), os.getenv("OPENAI_ORG_ID")),
-    "Heuristics": None,  # HeuristicStrategy(NamePredictor(os.getenv("HF_API_TOKEN"))),
+    "GPT4": lambda: None,  # OpenAIModel(os.getenv("OPENAI_API_KEY"), os.getenv("OPENAI_ORG_ID")),
+    "Heuristics": lambda: None,  # HeuristicStrategy(NamePredictor(os.getenv("HF_API_TOKEN"))),
 }
 
 # Switch if necessary
@@ -108,7 +108,8 @@ def run_experiment(folder: str) -> None:
         if os.path.isdir(inserts_file_path) or not inserts_file_path.endswith(".sql"):
             continue
 
-        for strategy_name, strategy in strategies.items():
+        for strategy_name, strategy_factory in strategies.items():
+            strategy = strategy_factory()
             if strategy is None:
                 continue
 

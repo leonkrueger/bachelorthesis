@@ -4,9 +4,6 @@ from enum import Enum
 
 import torch
 from huggingface_hub import InferenceClient
-from langchain.chains import LLMChain
-from langchain.prompts import PromptTemplate
-from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
 from peft import PeftModel
 from transformers import (
     AutoModelForCausalLM,
@@ -64,7 +61,7 @@ class LLama2Model(Strategy):
 
             # tokenizer.pad_token = tokenizer.unk_token
             # model.config.pad_token_id = tokenizer.pad_token_id
-            pipe = pipeline(
+            self.pipe = pipeline(
                 "text-generation",
                 model=model,
                 tokenizer=tokenizer,
@@ -76,7 +73,6 @@ class LLama2Model(Strategy):
                 eos_token_id=tokenizer.eos_token_id,
                 pad_token_id=tokenizer.pad_token_id,
             )
-            self.llm = HuggingFacePipeline(pipeline=pipe)
 
     def run_prompt(self, prompt_text: str) -> str:
         """Runs a prompt on a Llama2 model and returns its answer"""
@@ -88,9 +84,7 @@ class LLama2Model(Strategy):
                 model=self.model_name,
             ).strip()
         else:
-            prompt = PromptTemplate(template=prompt_text)
-            llm_chain = LLMChain(prompt=prompt, llm=self.llm)
-            return llm_chain.run().strip()
+            return self.pipe(prompt_text)[0]["generated_text"]
 
     def predict_table_name(self, query_data: QueryData) -> str:
         database_string = (
@@ -101,20 +95,24 @@ class LLama2Model(Strategy):
                 ]
             )
             if len(query_data.database_state) > 0
-            else "No table exists yet"
+            else "No table exists yet."
         )
 
         return re.search(
             r"Table: (?P<table>\S+)",
             self.run_prompt(
+                "<s>[INST] <<SYS>>\n"
                 "You are an intelligent database that predicts on which table a SQL-insert should be executed. "
                 "The inserts can contain abbreviated or synonymous names. The table and column names can be missing entirely. "
-                "You should then predict your result based on the available information. "
-                "You give the output in the form 'Table: {table_name}'. If there is a suitable table in the database, "
-                "you replace '{table_name}' with its name. Else, you replace '{table_name}' with a suitable name for a database table. "
-                "You don't give any explanation for your result."
-                "Predict the table for this example:\n"
+                "Base your guess on the available information. "
+                # "You give the output in the form 'Table: {table_name}'. If there is a suitable table in the database, "
+                # "you replace '{table_name}' with its name. Else, you replace '{table_name}' with a suitable name for a database table. "
+                "If there is a suitable table in the database answer its name. Else, predict a suitable name for a new database table. "
+                "Answer only with the name of the table. Don't give any explanation for your result.\n"
+                "<</SYS>>\n"
+                # "Predict the table for this example:\n"
                 f"Query: {query_data.query}\n"
-                f"Database State:\n{database_string}",
+                f"Database State:\n{database_string}[/INST]\n"
+                "Table:",
             ),
         ).group("table")
