@@ -111,7 +111,7 @@ class LLama2Model(Strategy):
                 "Answer only with the name of the table. Don't give any explanation for your result.\n"
                 "<</SYS>>\n"
                 # "Predict the table for this example:\n"
-                f"Query: {query_data.query}\n"
+                f"Query: {query_data.get_query(use_quotes=False)}\n"
                 f"Database State:\n{database_string}[/INST]\n"
                 "Table:",
             ),

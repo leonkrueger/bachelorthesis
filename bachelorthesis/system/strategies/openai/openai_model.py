@@ -1,7 +1,7 @@
 import re
+from typing import Dict, List
 
 from openai import OpenAI
-from typing import List, Dict
 
 from ...data.query_data import QueryData
 from ..strategy import Strategy
@@ -57,7 +57,7 @@ class OpenAIModel(Strategy):
                     {
                         "role": "user",
                         "content": f"Predict the table for this example:\n"
-                        f"Query: {query_data.query}\n"
+                        f"Query: {query_data.get_query(use_quotes=False)}\n"
                         f"Database State:\n{database_string}",
                     },
                 ],
