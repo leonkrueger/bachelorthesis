@@ -1,17 +1,17 @@
 from typing import Any, List, Tuple
 
 from .data.query_data import QueryData
+from .databases.database import Database
 from .insert_query_parser import parse_insert_query
-from .sql_handler import SQLHandler
 from .strategies.strategy import Strategy
 from .table_manager import TableManager
 
 
 class InsertQueryHandler:
     def __init__(
-        self, sql_handler: SQLHandler, table_manager: TableManager, strategy: Strategy
+        self, database: Database, table_manager: TableManager, strategy: Strategy
     ) -> None:
-        self.sql_handler = sql_handler
+        self.database = database
         self.table_manager = table_manager
         self.strategy = strategy
 
@@ -19,7 +19,7 @@ class InsertQueryHandler:
         """Collects all required information for the execution of the insert query and executes it on the database"""
 
         # Parse the query of the user and collect information needed for execution
-        query_data = QueryData(query, self.sql_handler.get_database_state())
+        query_data = QueryData(query, self.database.get_database_state())
         parse_insert_query(query_data)
 
         query_data.table = self.strategy.predict_table_name(query_data)
@@ -49,4 +49,4 @@ class InsertQueryHandler:
                     )
 
         # Execute constructed query
-        return self.sql_handler.execute_query(query_data.get_query())[0]
+        return self.database.execute_query(query_data.get_query())
