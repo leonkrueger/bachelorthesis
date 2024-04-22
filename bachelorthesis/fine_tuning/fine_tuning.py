@@ -4,7 +4,6 @@
 import os
 
 import bitsandbytes as bnb
-import pandas as pd
 import torch
 import torch.nn as nn
 import transformers
@@ -41,8 +40,6 @@ HF_API_TOKEN = "YOUR_HF_API_TOKEN"
 
 model_id = "meta-llama/Llama-2-7b-hf"
 
-# torch.backends.cuda.matmul.allow_tf32 = True
-
 # Load model and prepare for QLoRA
 bnb_config = BitsAndBytesConfig(
     load_in_4bit=True,
@@ -52,7 +49,7 @@ bnb_config = BitsAndBytesConfig(
 )
 model = AutoModelForCausalLM.from_pretrained(
     model_id,
-    device_map="cpu",
+    device_map="auto",
     trust_remote_code=True,
     quantization_config=bnb_config,
     token=HF_API_TOKEN,
@@ -87,17 +84,17 @@ os.makedirs(output_dir, exist_ok=True)
 
 # Configure training arguments
 training_args = transformers.TrainingArguments(
-    # auto_find_batch_size=True,
-    per_device_train_batch_size=4,
-    gradient_accumulation_steps=1,
-    gradient_checkpointing=True,
+    auto_find_batch_size=True,
+    # per_device_train_batch_size=4,
+    # gradient_accumulation_steps=1,
+    # gradient_checkpointing=True,
     num_train_epochs=1,  # TODO
     # learning_rate=2e-4,
-    bf16=True,
+    fp16=True,
     # tf32=True,
     # optim="adafactor",
     # optim="paged_adamw_32bit",
-    logging_steps=100,
+    logging_steps=20,
     save_total_limit=1,  # TODO
     save_strategy="epoch",
     output_dir=os.path.join(

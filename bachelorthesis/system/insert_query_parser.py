@@ -77,7 +77,7 @@ def parse_identifier(tokens: List[str], index: int) -> Tuple[str, int]:
 
     identifier = tokens[index]
     index += 1
-    while re.match(r"[A-Za-z0-9_$]+", tokens[index]):
+    while tokens[index].upper() != "VALUES" and re.match(r"[A-Za-z0-9_$]+", tokens[index]):
         identifier += tokens[index]
         index += 1
     return (identifier, index)

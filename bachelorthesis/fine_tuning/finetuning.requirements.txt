@@ -1,8 +1,6 @@
-pandas
 torch
 accelerate
 transformers
 datasets
 peft
-transformers==4.31.0
 bitsandbytes
