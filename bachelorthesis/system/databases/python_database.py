@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Tuple
 
+from ..create_table_parser import parse_create_table
 from ..data.query_data import QueryData
 from ..data.table_origin import TableOrigin
 from ..insert_query_parser import parse_insert_query
@@ -54,26 +55,26 @@ class PythonDatabase(Database):
             self.insert(query_data)
 
         elif query_upper.startswith("CREATE TABLE"):
-            pass
-        elif query_upper.startswith("SELECT"):
-            pass
+            table_name, column_names, column_types = parse_create_table(query)
+            self.create_table(table_name, column_names, column_types)
         # TODO: Table manager functions
         else:
             raise QueryNotSupportedException()
 
+    def select_all_data(self, table_name: str) -> List[Tuple[Any, ...]]:
+        return [tuple(row) for row in self.values[table_name]]
+
     def get_all_tables(self) -> List[str]:
         tables = self.columns.keys()
-        return [
-            table[0] for table in tables if table[0] not in self.internal_tables.keys()
-        ]
+        return [table for table in tables if table not in self.internal_tables.keys()]
 
     def get_all_columns(self, table_name: str) -> List[Tuple[str, str]]:
         return self.columns[table_name]
 
     def get_database_state(self) -> Dict[str, List[str]]:
         return {
-            table: [column[0] for column in columns]
-            for table, columns in self.columns.items()
+            table: [column[0] for column in self.get_all_columns(table)]
+            for table in self.get_all_tables()
         }
 
     def create_table(
@@ -113,11 +114,23 @@ class PythonDatabase(Database):
                 column_index = [
                     i
                     for i, column in enumerate(self.columns[query_data.table])
-                    if column[0] == query_column
+                    if column[0] == query_column[0]
                 ]
                 if len(column_index) != 1:
                     raise IncorrectQueryException()
 
-                database_row[column_index[0]] = value
+                database_row[column_index[0]] = (
+                    None
+                    if value == "NULL"
+                    else (
+                        int(value)
+                        if query_column[1] == "BIGINT"
+                        else (
+                            float(value)
+                            if query_column[1] == "DOUBLE"
+                            else value[1 : len(value) - 1]
+                        )
+                    )
+                )
 
             self.values[query_data.table].append(database_row)

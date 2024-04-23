@@ -33,6 +33,10 @@ class MySQLDatbase(Database):
         cursor.close()
         return output
 
+    def select_all_data(self, table_name: str) -> List[Tuple[Any, ...]]:
+        query = f"SELECT * FROM {table_name};"
+        return self.execute_query(query)
+
     def get_all_tables(self) -> List[str]:
         query = "SHOW TABLES;"
         output = self.execute_query(query)

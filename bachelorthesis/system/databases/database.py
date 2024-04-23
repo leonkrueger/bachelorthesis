@@ -8,6 +8,10 @@ class Database:
         """Executes the query with the given parameters on the database and returns its result"""
         raise NotImplementedError()
 
+    def select_all_data(self, table_name: str) -> List[Tuple[Any, ...]]:
+        """Returns the data from the specified table"""
+        raise NotImplementedError()
+
     def get_all_tables(self) -> List[str]:
         """Returns all table names of the database"""
         raise NotImplementedError()

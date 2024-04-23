@@ -41,7 +41,7 @@ def save_results_and_clean_database(results_file_path: str) -> None:
     for table in database.get_all_tables():
         query = f"SELECT * FROM {table};"
         try:
-            output = database.execute_query(query)
+            output = database.select_all_data(table)
             output = [
                 [
                     value if type(value) in [int, float, str] else str(value)
