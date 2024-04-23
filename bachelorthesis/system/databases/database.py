@@ -48,6 +48,6 @@ class Database:
         """Removes all custom tables in the database and empties the internal ones"""
         raise NotImplementedError()
 
-    def close() -> None:
+    def close(self) -> None:
         """Closes database connections if necessary"""
         pass

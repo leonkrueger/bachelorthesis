@@ -1,7 +1,7 @@
 import json
 import os
 
-from system.databases.mysql_database import MySQLDatbase
+from system.databases.python_database import PythonDatabase
 from system.insert_query_handler import InsertQueryHandler
 from system.strategies.heuristic.heuristic_strategy import HeuristicStrategy
 from system.strategies.heuristic.name_predictor import NamePredictor
@@ -9,15 +9,15 @@ from system.strategies.llama2.llama2_model import LLama2Model, LLama2ModelType
 from system.strategies.openai.openai_model import OpenAIModel
 from system.table_manager import TableManager
 
-database = MySQLDatbase()
+database = PythonDatabase()
 table_manager = TableManager(database)
 
 strategies = {
     "Llama2_finetuned": lambda: None,
-    "Llama2": lambda: LLama2Model(
-        LLama2ModelType.NON_FINE_TUNED_LOCAL,
-        huggingface_api_token=os.getenv("HF_API_TOKEN"),
-    ),
+    "Llama2": lambda: None,  # lambda: LLama2Model(
+    #     LLama2ModelType.NON_FINE_TUNED_LOCAL,
+    #     huggingface_api_token=os.getenv("HF_API_TOKEN"),
+    # ),
     "GPT4": lambda: None,  # OpenAIModel(os.getenv("OPENAI_API_KEY"), os.getenv("OPENAI_ORG_ID")),
     "Heuristics": lambda: None,  # HeuristicStrategy(NamePredictor(os.getenv("HF_API_TOKEN"))),
 }
@@ -25,10 +25,21 @@ strategies = {
 # Switch if necessary
 evaluation_folder = "data"
 
-errors_file_path = os.path.join("/app", "evaluation", "errors.txt")
-errors_file = open(errors_file_path, "w", encoding="utf-8")
+# Depends on if the script is run in Docker or as plain python
+# evaluation_base_folder = os.path.join("/app", "evaluation")
+evaluation_base_folder = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    "..",
+    "..",
+    "evaluation",
+    "bachelorthesis",
+)
 
-evaluation_folder = os.path.join("/app", "evaluation", evaluation_folder)
+
+evaluation_folder = os.path.join(evaluation_base_folder, evaluation_folder)
+
+errors_file_path = os.path.join(evaluation_base_folder, "errors.txt")
+errors_file = open(errors_file_path, "w", encoding="utf-8")
 
 database.reset_database()
 
@@ -36,8 +47,6 @@ database.reset_database()
 def save_results_and_clean_database(results_file_path: str) -> None:
     """Saves the database contents to a json-file"""
     results = {}
-    print(f"Started evaluating {results_file_path}.")
-
     for table in database.get_all_tables():
         query = f"SELECT * FROM {table};"
         try:
