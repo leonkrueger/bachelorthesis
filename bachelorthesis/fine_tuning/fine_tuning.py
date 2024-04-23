@@ -19,12 +19,14 @@ from transformers import (
 
 def generate_prompt(data_point):
     return (
+        "<s>[INST] <<SYS>>\n"
         "You are an intelligent database that predicts on which table a SQL-insert should be executed. "
         "The inserts can contain abbreviated or synonymous names. The table and column names can be missing entirely. "
-        "You should then predict your result based on the available information. "
-        "You give the output in the form 'Table: {table_name}'. If there is a suitable table in the database, "
-        "you replace '{table_name}' with its name. Else, you replace '{table_name}' with a suitable name for a database table.\n"
-        f"[INST]{data_point['Instruction']}[INST]\n"
+        "Base your guess on the available information. "
+        "If there is a suitable table in the database answer its name. Else, predict a suitable name for a new database table. "
+        "Answer only with the name of the table. Don't give any explanation for your result.\n"
+        "<</SYS>>\n"
+        f"{data_point['Instruction']}[/INST]\n"
         f"{data_point['Response']}".strip()
     )
 
