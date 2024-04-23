@@ -112,7 +112,9 @@ class PythonDatabase(Database):
         for query_row in query_data.values:
             database_row = [None for column in self.columns[query_data.table]]
 
-            for query_column, value in zip(query_data.columns, query_row):
+            for query_column, query_colummn_type, value in zip(
+                query_data.columns, query_data.column_types, query_row
+            ):
                 column_index = [
                     i
                     for i, column in enumerate(self.columns[query_data.table])
@@ -126,10 +128,10 @@ class PythonDatabase(Database):
                     if value == "NULL"
                     else (
                         int(value)
-                        if query_column[1] == "BIGINT"
+                        if query_colummn_type == "BIGINT"
                         else (
                             float(value)
-                            if query_column[1] == "DOUBLE"
+                            if query_colummn_type == "DOUBLE"
                             else value[1 : len(value) - 1]
                         )
                     )
