@@ -1,6 +1,7 @@
 from typing import Any, List, Tuple
 
 from .data.query_data import QueryData
+from .data.table_origin import TableOrigin
 from .databases.database import Database
 from .insert_query_parser import parse_insert_query
 from .strategies.strategy import Strategy
@@ -21,6 +22,7 @@ class InsertQueryHandler:
         # Parse the query of the user and collect information needed for execution
         query_data = QueryData(query, self.database.get_database_state())
         parse_insert_query(query_data)
+        query_data.table_origin = TableOrigin.PREDICTION  # TODO
 
         query_data.table = self.strategy.predict_table_name(query_data)
 
