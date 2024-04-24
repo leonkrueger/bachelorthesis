@@ -2,18 +2,24 @@ import os
 import traceback
 
 from system.databases.mysql_database import MySQLDatbase
+from system.databases.python_database import PythonDatabase
 from system.insert_query_handler import InsertQueryHandler
 from system.strategies.heuristic.heuristic_strategy import HeuristicStrategy
 from system.strategies.heuristic.name_predictor import NamePredictor
+from system.strategies.llama3.llama3_model import Llama3Model, Llama3ModelType
 from system.strategies.openai.openai_model import OpenAIModel
 from system.table_manager import TableManager
 from tabulate import tabulate
 
-database = MySQLDatbase()
+database = PythonDatabase()
 table_manager = TableManager(database)
 
-strategy = HeuristicStrategy(NamePredictor(os.getenv("HF_API_TOKEN")))
+# strategy = HeuristicStrategy(NamePredictor(os.getenv("HF_API_TOKEN")))
 # strategy = OpenAIModel(os.getenv("OPENAI_API_KEY"), os.getenv("OPENAI_ORG_ID"))
+strategy = Llama3Model(
+    Llama3ModelType.NON_FINE_TUNED,
+    huggingface_api_token="YOUR_HF_API_TOKEN",
+)
 
 insert_query_handler = InsertQueryHandler(database, table_manager, strategy)
 

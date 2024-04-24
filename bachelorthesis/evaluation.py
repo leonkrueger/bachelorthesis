@@ -17,10 +17,10 @@ strategies = {
     "Llama2_finetuned": None,
     "Llama2": LLama2Model(
         LLama2ModelType.NON_FINE_TUNED_LOCAL,
-        huggingface_api_token=os.getenv("YOUR_HF_API_TOKEN"),
+        huggingface_api_token="YOUR_HF_API_TOKEN",
     ),
     "GPT4": None,  # OpenAIModel(os.getenv("OPENAI_API_KEY"), os.getenv("OPENAI_ORG_ID")),
-    "Heuristics": None, # HeuristicStrategy(NamePredictor("YOUR_HF_API_TOKEN")),
+    "Heuristics": None,  # HeuristicStrategy(NamePredictor("YOUR_HF_API_TOKEN")),
 }
 
 # Switch if necessary
