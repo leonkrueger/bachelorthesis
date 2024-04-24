@@ -84,7 +84,7 @@ class Llama3Model(Strategy):
             do_sample=True,
             temperature=0.6,
             top_p=0.9,
-        )[0]["generated_text"][len(prompt) - 6 :].strip()
+        )[0]["generated_text"][len(prompt):].strip()
 
     def predict_table_name(self, query_data: QueryData) -> str:
         database_string = (
@@ -99,7 +99,7 @@ class Llama3Model(Strategy):
         )
 
         return re.search(
-            r"Table:\s*(?P<table>\S+)",
+            r"(?P<table>\S+)",
             self.run_prompt(
                 [
                     {
