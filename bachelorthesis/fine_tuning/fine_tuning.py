@@ -18,29 +18,32 @@ from transformers import (
 
 
 def generate_prompt(data_point):
-    return (
-        "<s>[INST] <<SYS>>\n"
-        "You are an intelligent database that predicts on which table a SQL-insert should be executed. "
-        "The inserts can contain abbreviated or synonymous names. The table and column names can be missing entirely. "
-        "Base your guess on the available information. "
-        "If there is a suitable table in the database answer its name. Else, predict a suitable name for a new database table. "
-        "Answer only with the name of the table. Don't give any explanation for your result.\n"
-        "<</SYS>>\n"
-        f"{data_point['Instruction']}[/INST]\n"
-        f"{data_point['Response']}".strip()
-    )
+    return [
+        {
+            "role": "system",
+            "content": "You are an intelligent database that predicts on which table a SQL-insert should be executed. "
+            "The inserts can contain abbreviated or synonymous names. The table and column names can be missing entirely. "
+            "Base your guess on the available information. "
+            "If there is a suitable table in the database answer its name. Else, predict a suitable name for a new database table. "
+            "Answer only with the name of the table. Don't give any explanation for your result.",
+        },
+        {
+            "role": "user",
+            "content": f"{data_point['Instruction']}\n" "Table:",
+        },
+        {"role": "assistant", "content": f"{data_point['Response'][7:]}"},
+    ]
 
 
 def generate_and_tokenize_prompt(data_point):
     full_prompt = generate_prompt(data_point)
-    tokenized_full_prompt = tokenizer(full_prompt, padding=True, truncation=True)
-    return tokenized_full_prompt
+    return tokenizer.apply_chat_template(full_prompt, tokenize=False)
 
 
 HF_API_TOKEN = "YOUR_HF_API_TOKEN"
 
-
-model_id = "meta-llama/Llama-2-7b-hf"
+model_id = "meta-llama/Meta-Llama-3-8B-Instruct"
+input_file = "missing_tables_300"
 
 # Load model and prepare for QLoRA
 bnb_config = BitsAndBytesConfig(
@@ -74,28 +77,22 @@ model = get_peft_model(model, config)
 
 # Create train dataset
 dataset_name = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)), "fine_tuning_input.json"
+    os.path.dirname(os.path.realpath(__file__)), "input", f"{input_file}.json"
 )
 dataset = load_dataset("json", data_files=dataset_name, split="train")
 dataset = dataset.shuffle().map(generate_and_tokenize_prompt)
 
 output_dir = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)), "output", "fine_tuned_model"
+    os.path.dirname(os.path.realpath(__file__)), "output", input_file
 )
 os.makedirs(output_dir, exist_ok=True)
 
 # Configure training arguments
 training_args = transformers.TrainingArguments(
     auto_find_batch_size=True,
-    # per_device_train_batch_size=4,
-    # gradient_accumulation_steps=1,
-    # gradient_checkpointing=True,
     num_train_epochs=1,  # TODO
     # learning_rate=2e-4,
     fp16=True,
-    # tf32=True,
-    # optim="adafactor",
-    # optim="paged_adamw_32bit",
     logging_steps=20,
     save_total_limit=1,  # TODO
     save_strategy="epoch",

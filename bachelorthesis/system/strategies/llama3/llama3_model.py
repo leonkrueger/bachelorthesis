@@ -59,6 +59,7 @@ class Llama3Model(Strategy):
             model = PeftModel.from_pretrained(base_model, fine_tuned_model_dir)
             model = model.merge_and_unload()
 
+        tokenizer.pad_token = tokenizer.eos_token
         self.pipe = pipeline(
             "text-generation",
             model=model,
@@ -84,7 +85,7 @@ class Llama3Model(Strategy):
             do_sample=True,
             temperature=0.6,
             top_p=0.9,
-        )[0]["generated_text"][len(prompt):].strip()
+        )[0]["generated_text"][len(prompt) :].strip()
 
     def predict_table_name(self, query_data: QueryData) -> str:
         database_string = (
