@@ -1,5 +1,6 @@
 import json
 import os
+import traceback
 
 from system.databases.python_database import PythonDatabase
 from system.insert_query_handler import InsertQueryHandler
@@ -13,13 +14,13 @@ database = PythonDatabase()
 table_manager = TableManager(database)
 
 strategies = {
-    "Llama2_finetuned": lambda: None,
-    "Llama2": lambda: None,  # lambda: LLama2Model(
-    #     LLama2ModelType.NON_FINE_TUNED_LOCAL,
-    #     huggingface_api_token=os.getenv("HF_API_TOKEN"),
-    # ),
-    "GPT4": lambda: None,  # OpenAIModel(os.getenv("OPENAI_API_KEY"), os.getenv("OPENAI_ORG_ID")),
-    "Heuristics": lambda: None,  # HeuristicStrategy(NamePredictor(os.getenv("HF_API_TOKEN"))),
+    "Llama2_finetuned": None,
+    "Llama2": LLama2Model(
+        LLama2ModelType.NON_FINE_TUNED_LOCAL,
+        huggingface_api_token=os.getenv("YOUR_HF_API_TOKEN"),
+    ),
+    "GPT4": None,  # OpenAIModel(os.getenv("OPENAI_API_KEY"), os.getenv("OPENAI_ORG_ID")),
+    "Heuristics": None, # HeuristicStrategy(NamePredictor("YOUR_HF_API_TOKEN")),
 }
 
 # Switch if necessary
@@ -108,8 +109,7 @@ def run_experiment(folder: str) -> None:
         if os.path.isdir(inserts_file_path) or not inserts_file_path.endswith(".sql"):
             continue
 
-        for strategy_name, strategy_factory in strategies.items():
-            strategy = strategy_factory()
+        for strategy_name, strategy in strategies.items():
             if strategy is None:
                 continue
 
@@ -134,7 +134,8 @@ def run_experiment(folder: str) -> None:
                     insert_query_handler.handle_insert_query(query)
                 except Exception as e:
                     print(f"Error while executing query: {query}")
-                    errors_file.write(f"Error {e} while executing query: {query}\n")
+                    errors_file.write(f"Error while executing query: {query}\n")
+                    errors_file.write(traceback.format_exc() + "\n\n")
 
             save_results_and_clean_database(results_file_path)
 
