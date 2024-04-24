@@ -37,7 +37,7 @@ def generate_prompt(data_point):
 
 def generate_and_tokenize_prompt(data_point):
     full_prompt = generate_prompt(data_point)
-    return tokenizer.apply_chat_template(full_prompt, tokenize=False)
+    return tokenizer.apply_chat_template(full_prompt, return_dict=True)
 
 
 HF_API_TOKEN = "YOUR_HF_API_TOKEN"
@@ -48,7 +48,7 @@ input_file = "missing_tables_300"
 # Load model and prepare for QLoRA
 bnb_config = BitsAndBytesConfig(
     load_in_4bit=True,
-    load_4bit_use_double_quant=True,
+    # load_4bit_use_double_quant=True,
     bnb_4bit_quant_type="nf4",
     bnb_4bit_compute_dtype=torch.bfloat16,
 )
