@@ -6,7 +6,6 @@ from system.databases.python_database import PythonDatabase
 from system.insert_query_handler import InsertQueryHandler
 from system.strategies.heuristic.heuristic_strategy import HeuristicStrategy
 from system.strategies.heuristic.name_predictor import NamePredictor
-from system.strategies.llama2.llama2_model import LLama2Model, LLama2ModelType
 from system.strategies.llama3.llama3_model import Llama3Model, Llama3ModelType
 from system.strategies.openai.openai_model import OpenAIModel
 from system.table_manager import TableManager
@@ -17,9 +16,9 @@ table_manager = TableManager(database)
 HF_API_TOKEN = "YOUR_HF_API_TOKEN"
 
 strategies = {
-    "Llama2_finetuned": None,
-    "Llama2": None,  # LLama2Model(
-    #     LLama2ModelType.NON_FINE_TUNED_LOCAL,
+    "Llama3_finetuned": None,
+    "Llama3": None,  # Llama3Model(
+    #     Llama3ModelType.NON_FINE_TUNED_LOCAL,
     #     huggingface_api_token=HF_API_TOKEN,
     # ),
     "GPT4": None,  # OpenAIModel(os.getenv("OPENAI_API_KEY"), os.getenv("OPENAI_ORG_ID")),
