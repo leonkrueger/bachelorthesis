@@ -7,20 +7,32 @@ from system.insert_query_handler import InsertQueryHandler
 from system.strategies.heuristic.heuristic_strategy import HeuristicStrategy
 from system.strategies.heuristic.name_predictor import NamePredictor
 from system.strategies.llama2.llama2_model import LLama2Model, LLama2ModelType
+from system.strategies.llama3.llama3_model import Llama3Model, Llama3ModelType
 from system.strategies.openai.openai_model import OpenAIModel
 from system.table_manager import TableManager
 
 database = PythonDatabase()
 table_manager = TableManager(database)
 
+HF_API_TOKEN = "YOUR_HF_API_TOKEN"
+
 strategies = {
     "Llama2_finetuned": None,
-    "Llama2": LLama2Model(
-        LLama2ModelType.NON_FINE_TUNED_LOCAL,
-        huggingface_api_token="YOUR_HF_API_TOKEN",
-    ),
+    "Llama2": None,  # LLama2Model(
+    #     LLama2ModelType.NON_FINE_TUNED_LOCAL,
+    #     huggingface_api_token=HF_API_TOKEN,
+    # ),
     "GPT4": None,  # OpenAIModel(os.getenv("OPENAI_API_KEY"), os.getenv("OPENAI_ORG_ID")),
-    "Heuristics": None,  # HeuristicStrategy(NamePredictor("YOUR_HF_API_TOKEN")),
+    "Heuristics": None,  # HeuristicStrategy(NamePredictor(HF_API_TOKEN)),
+    "missing_tables_300": Llama3Model(
+        Llama3ModelType.FINE_TUNED,
+        os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            "fine_tuning",
+            "output",
+            "missing_tables_300",
+        ),
+    ),
 }
 
 # Switch if necessary
