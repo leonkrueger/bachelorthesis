@@ -128,6 +128,9 @@ def run_experiment(folder: str) -> None:
                 folder, strategy_name, path[:-4].replace("input", "results") + ".json"
             )
 
+            if not os.path.exists(results_file_path):
+                continue
+
             # Continue if experiment was already run
             with open(results_file_path, encoding="utf-8") as results_file:
                 if results_file.read().strip() != "":
