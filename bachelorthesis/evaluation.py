@@ -23,14 +23,17 @@ strategies = {
     # ),
     "GPT4": None,  # OpenAIModel(os.getenv("OPENAI_API_KEY"), os.getenv("OPENAI_ORG_ID")),
     "Heuristics": None,  # HeuristicStrategy(NamePredictor(HF_API_TOKEN)),
-    "missing_tables_300": Llama3Model(
-        Llama3ModelType.FINE_TUNED,
-        os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            "fine_tuning",
-            "output",
-            "missing_tables_300",
-        ),
+    "missing_tables_300": None,  # Llama3Model(
+    #     Llama3ModelType.FINE_TUNED,
+    #     os.path.join(
+    #         os.path.dirname(os.path.realpath(__file__)),
+    #         "fine_tuning",
+    #         "output",
+    #         "missing_tables_300",
+    #     ),
+    # ),
+    "missing_tables_0": Llama3Model(
+        Llama3ModelType.NON_FINE_TUNED, huggingface_api_token=HF_API_TOKEN
     ),
 }
 
