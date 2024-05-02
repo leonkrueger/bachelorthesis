@@ -171,7 +171,7 @@ def run_experiments_for_database(folder: str) -> None:
 
 for path in os.listdir(evaluation_folder):
     subfolder = os.path.join(evaluation_folder, path)
-    if not os.path.isdir(subfolder):
+    if not os.path.isdir(subfolder) or path == "evaluation":
         continue
 
     run_experiments_for_database(subfolder)
