@@ -1,7 +1,8 @@
+import copy
 import json
 import os
 import re
-from typing import Any
+from typing import Any, Dict, List
 
 import torch
 from peft import PeftModel
@@ -104,20 +105,49 @@ def generate_and_tokenize_prompt(data_point):
     )
 
 
-def run_experiments_for_strategy(evaluation_input: list[dict[str, Any]]) -> None:
+def run_prompt(prompt) -> str:
+    return re.search(
+        r"(?P<table>\S+)",
+        pipe(
+            prompt,
+            max_new_tokens=max_new_tokens,
+            eos_token_id=terminators,
+            do_sample=True,
+            temperature=0.6,
+            top_p=0.9,
+        )[0]["generated_text"][len(prompt) :].strip(),
+    ).group("table")
+
+
+def run_experiments_for_strategy(
+    evaluation_input: List[Dict[str, Any]]
+) -> List[Dict[str, Any]]:
+    result_points = []
     for data_point in evaluation_input:
-        prompt = generate_and_tokenize_prompt(data_point)
-        data_point["predicted_table_name"] = re.search(
-            r"(?P<table>\S+)",
-            pipe(
-                prompt,
-                max_new_tokens=max_new_tokens,
-                eos_token_id=terminators,
-                do_sample=True,
-                temperature=0.6,
-                top_p=0.9,
-            )[0]["generated_text"][len(prompt) :].strip(),
-        ).group("table")
+        # Run prompt directly
+        # prompt = generate_and_tokenize_prompt(data_point)
+        # data_point["predicted_table_name"] = run_prompt(prompt)
+        # result_points.append(data_point)
+
+        # Get different table name first
+        result_point = copy.deepcopy(data_point)
+        data_point["query"] = (
+            data_point["query"][:12]
+            + data_point["query"][data_point["query"].find("(") :]
+        )
+        table_name_generation_prompt = generate_and_tokenize_prompt(data_point)
+        table_name = run_prompt(table_name_generation_prompt)
+
+        if table_name == data_point["expected_table_name"]:
+            continue
+
+        # Run evaluation prompt
+        result_point["database_state"][table_name] = result_point["database_state"].pop(
+            result_point["expected_table_name"]
+        )
+        prompt = generate_and_tokenize_prompt(result_point)
+        result_point["predicted_table_name"] = run_prompt(prompt)
+        result_points.append(result_point)
 
 
 with open(
