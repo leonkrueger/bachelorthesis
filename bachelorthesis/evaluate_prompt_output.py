@@ -141,10 +141,12 @@ def run_experiments_for_strategy(
         if table_name == data_point["expected_table_name"]:
             continue
 
-        # Run evaluation prompt
         result_point["database_state"][table_name] = result_point["database_state"].pop(
             result_point["expected_table_name"]
         )
+        result_point["expected_table_name"] == table_name
+
+        # Run evaluation prompt
         prompt = generate_and_tokenize_prompt(result_point)
         result_point["predicted_table_name"] = run_prompt(prompt)
         result_points.append(result_point)
@@ -163,10 +165,10 @@ with open(output_file_path, encoding="utf-8") as results_file:
     if results_file.read().strip() != "":
         exit()
 
-run_experiments_for_strategy(evaluation_input)
+results = run_experiments_for_strategy(evaluation_input)
 
 with open(output_file_path, mode="w", encoding="utf-8") as output_file:
-    json.dump(evaluation_input, output_file)
+    json.dump(results, output_file)
 
 errors_file.close()
 os.chmod(errors_file_path, 0o777)
