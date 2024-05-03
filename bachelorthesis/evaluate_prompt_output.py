@@ -106,7 +106,7 @@ def generate_and_tokenize_prompt(data_point):
 
 def run_experiments_for_strategy(evaluation_input: list[dict[str, Any]]) -> None:
     for data_point in evaluation_input:
-        prompt = generate_and_tokenize_prompt()
+        prompt = generate_and_tokenize_prompt(data_point)
         data_point["predicted_table_name"] = re.search(
             r"(?P<table>\S+)",
             pipe(
