@@ -144,7 +144,7 @@ def run_experiments_for_strategy(
         result_point["database_state"][table_name] = result_point["database_state"].pop(
             result_point["expected_table_name"]
         )
-        result_point["expected_table_name"] == table_name
+        result_point["expected_table_name"] = table_name
 
         # Run evaluation prompt
         prompt = generate_and_tokenize_prompt(result_point)
