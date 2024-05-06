@@ -151,6 +151,8 @@ def run_experiments_for_strategy(
         result_point["predicted_table_name"] = run_prompt(prompt)
         result_points.append(result_point)
 
+    return result_points
+
 
 with open(
     os.path.join(evaluation_folder, evaluation_input_file), encoding="utf-8"
