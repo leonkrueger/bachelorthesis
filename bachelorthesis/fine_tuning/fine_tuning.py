@@ -26,7 +26,6 @@ output_file = "missing_tables_1500_4"
 run_name = "1500_queries_4_epochs"
 
 os.environ["WANDB_PROJECT"] = "bachelorthesis_missing_tables"
-os.environ["WANDB_LOG_MODEL"] = "checkpoint"
 wandb.login(key=WANDB_API_TOKEN)
 
 
@@ -104,8 +103,7 @@ training_args = transformers.TrainingArguments(
     learning_rate=4e-4,
     fp16=True,
     logging_steps=1,
-    save_total_limit=1,  # TODO
-    save_strategy="epoch",
+    save_strategy="no",
     output_dir=os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "output", "steps"
     ),
