@@ -8,3 +8,4 @@ openai
 peft
 bitsandbytes
 datasets
+wandb

@@ -25,9 +25,9 @@ input_file = "missing_tables_1500"
 output_file = "missing_tables_1500_4"
 run_name = "1500_queries_4_epochs"
 
-wandb.login(key=WANDB_API_TOKEN)
 os.environ["WANDB_PROJECT"] = "bachelorthesis_missing_tables"
 os.environ["WANDB_LOG_MODEL"] = "checkpoint"
+wandb.login(key=WANDB_API_TOKEN)
 
 
 def generate_prompt(data_point):
@@ -98,12 +98,12 @@ os.makedirs(output_dir, exist_ok=True)
 # Configure training arguments
 training_args = transformers.TrainingArguments(
     # auto_find_batch_size=True,
-    per_device_train_batch_size=4,
+    per_device_train_batch_size=1,
     gradient_accumulation_steps=32,
     num_train_epochs=4,  # TODO
     learning_rate=4e-4,
     fp16=True,
-    logging_steps=20,
+    logging_steps=1,
     save_total_limit=1,  # TODO
     save_strategy="epoch",
     output_dir=os.path.join(
