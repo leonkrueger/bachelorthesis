@@ -7,6 +7,7 @@ import bitsandbytes as bnb
 import torch
 import torch.nn as nn
 import transformers
+import wandb
 from datasets import load_dataset
 from peft import LoraConfig, PeftConfig, get_peft_model, prepare_model_for_kbit_training
 from transformers import (
@@ -15,6 +16,18 @@ from transformers import (
     AutoTokenizer,
     BitsAndBytesConfig,
 )
+
+HF_API_TOKEN = "YOUR_HF_API_TOKEN"
+WANDB_API_TOKEN = "YOUR_WANDB_API_TOKEN"
+
+model_id = "meta-llama/Meta-Llama-3-8B-Instruct"
+input_file = "missing_tables_1500"
+output_file = "missing_tables_1500_4"
+run_name = "1500_queries_4_epochs"
+
+wandb.login(key=WANDB_API_TOKEN)
+os.environ["WANDB_PROJECT"] = "bachelorthesis_missing_tables"
+os.environ["WANDB_LOG_MODEL"] = "checkpoint"
 
 
 def generate_prompt(data_point):
@@ -39,11 +52,6 @@ def generate_and_tokenize_prompt(data_point):
     full_prompt = generate_prompt(data_point)
     return tokenizer.apply_chat_template(full_prompt, return_dict=True)
 
-
-HF_API_TOKEN = "YOUR_HF_API_TOKEN"
-
-model_id = "meta-llama/Meta-Llama-3-8B-Instruct"
-input_file = "missing_tables_300"
 
 # Load model and prepare for QLoRA
 bnb_config = BitsAndBytesConfig(
@@ -83,15 +91,17 @@ dataset = load_dataset("json", data_files=dataset_name, split="train")
 dataset = dataset.shuffle().map(generate_and_tokenize_prompt)
 
 output_dir = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)), "output", input_file
+    os.path.dirname(os.path.realpath(__file__)), "output", output_file
 )
 os.makedirs(output_dir, exist_ok=True)
 
 # Configure training arguments
 training_args = transformers.TrainingArguments(
-    auto_find_batch_size=True,
-    num_train_epochs=1,  # TODO
-    # learning_rate=2e-4,
+    # auto_find_batch_size=True,
+    per_device_train_batch_size=4,
+    gradient_accumulation_steps=32,
+    num_train_epochs=4,  # TODO
+    learning_rate=4e-4,
     fp16=True,
     logging_steps=20,
     save_total_limit=1,  # TODO
@@ -99,7 +109,10 @@ training_args = transformers.TrainingArguments(
     output_dir=os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "output", "steps"
     ),
+    report_to="wandb",
+    run_name=run_name,
 )
+# Validation set
 
 # Train model
 trainer = transformers.Trainer(
