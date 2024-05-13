@@ -21,9 +21,10 @@ HF_API_TOKEN = "YOUR_HF_API_TOKEN"
 WANDB_API_TOKEN = "YOUR_WANDB_API_TOKEN"
 
 model_id = "meta-llama/Meta-Llama-3-8B-Instruct"
-input_file = "missing_tables_1500"
-output_file = "missing_tables_1500_4"
-run_name = "1500_queries_4_epochs"
+train_input_file = "missing_tables_1500"
+validation_input_file = "missing_tables"
+output_dir = "missing_tables_1500_4"
+wandb_run_name = "1500_queries_4_epochs"
 
 os.environ["WANDB_PROJECT"] = "bachelorthesis_missing_tables"
 wandb.login(key=WANDB_API_TOKEN)
@@ -83,14 +84,37 @@ config = LoraConfig(
 model = get_peft_model(model, config)
 
 # Create train dataset
-dataset_name = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)), "input", f"{input_file}.json"
+train_dataset_name = os.path.join(
+    "..",
+    "..",
+    "..",
+    "evaluation",
+    "bachelorthesis",
+    "fine_tuning",
+    "datasets",
+    f"{train_input_file}.json",
 )
-dataset = load_dataset("json", data_files=dataset_name, split="train")
-dataset = dataset.shuffle().map(generate_and_tokenize_prompt)
+train_dataset = load_dataset("json", data_files=train_dataset_name, split="train")
+train_dataset = train_dataset.shuffle().map(generate_and_tokenize_prompt)
+
+# Create validation dataset
+validation_dataset_name = os.path.join(
+    "..",
+    "..",
+    "..",
+    "evaluation",
+    "bachelorthesis",
+    "fine_tuning",
+    "validation_datasets",
+    f"{validation_input_file}.json",
+)
+validation_dataset = load_dataset(
+    "json", data_files=validation_dataset_name, split="validation"
+)
+validation_dataset = validation_dataset.shuffle().map(generate_and_tokenize_prompt)
 
 output_dir = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)), "output", output_file
+    os.path.dirname(os.path.realpath(__file__)), "output", output_dir
 )
 os.makedirs(output_dir, exist_ok=True)
 
@@ -103,19 +127,22 @@ training_args = transformers.TrainingArguments(
     learning_rate=4e-4,
     fp16=True,
     logging_steps=1,
+    evaluation_strategy="steps",
+    eval_steps=1,
     save_strategy="no",
     output_dir=os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "output", "steps"
     ),
     report_to="wandb",
-    run_name=run_name,
+    run_name=wandb_run_name,
 )
 # Validation set
 
 # Train model
 trainer = transformers.Trainer(
     model=model,
-    train_dataset=dataset,
+    train_dataset=train_dataset,
+    eval_dataset=validation_dataset,
     args=training_args,
     data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False),
 )
