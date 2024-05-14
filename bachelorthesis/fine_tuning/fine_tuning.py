@@ -18,16 +18,16 @@ from transformers import (
 )
 
 HF_API_TOKEN = "YOUR_HF_API_TOKEN"
-WANDB_API_TOKEN = "YOUR_WANDB_API_TOKEN"
+# WANDB_API_TOKEN = "YOUR_WANDB_API_TOKEN"
 
 model_id = "meta-llama/Meta-Llama-3-8B-Instruct"
-train_input_file = "missing_tables_1500"
+train_input_file = "missing_tables_12000"
 validation_input_file = "missing_tables"
-output_dir = "missing_tables_1500_4"
-wandb_run_name = "1500_queries_4_epochs"
+output_dir = "missing_tables_12000_1"
+wandb_run_name = "12000_queries_1_epochs"
 
 os.environ["WANDB_PROJECT"] = "bachelorthesis_missing_tables"
-wandb.login(key=WANDB_API_TOKEN)
+wandb.login()
 
 
 def generate_prompt(data_point):
@@ -85,6 +85,7 @@ model = get_peft_model(model, config)
 
 # Create train dataset
 train_dataset_name = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
     "..",
     "..",
     "..",
@@ -99,6 +100,7 @@ train_dataset = train_dataset.shuffle().map(generate_and_tokenize_prompt)
 
 # Create validation dataset
 validation_dataset_name = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
     "..",
     "..",
     "..",
@@ -109,7 +111,7 @@ validation_dataset_name = os.path.join(
     f"{validation_input_file}.json",
 )
 validation_dataset = load_dataset(
-    "json", data_files=validation_dataset_name, split="validation"
+    "json", data_files=validation_dataset_name, split="train"
 )
 validation_dataset = validation_dataset.shuffle().map(generate_and_tokenize_prompt)
 
@@ -120,15 +122,15 @@ os.makedirs(output_dir, exist_ok=True)
 
 # Configure training arguments
 training_args = transformers.TrainingArguments(
-    # auto_find_batch_size=True,
     per_device_train_batch_size=1,
-    gradient_accumulation_steps=32,
-    num_train_epochs=4,  # TODO
+    per_device_eval_batch_size=1,
+    gradient_accumulation_steps=64,
+    num_train_epochs=1,
     learning_rate=4e-4,
     fp16=True,
     logging_steps=1,
     evaluation_strategy="steps",
-    eval_steps=1,
+    eval_steps=10,
     save_strategy="no",
     output_dir=os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "output", "steps"
@@ -136,7 +138,6 @@ training_args = transformers.TrainingArguments(
     report_to="wandb",
     run_name=wandb_run_name,
 )
-# Validation set
 
 # Train model
 trainer = transformers.Trainer(
