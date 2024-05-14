@@ -16,6 +16,9 @@ from transformers import (
     AutoTokenizer,
     BitsAndBytesConfig,
 )
+from transformers.integrations import WandbCallback
+
+from .wandb_callback import WandbTablePredictionAccuracyCallback
 
 HF_API_TOKEN = "YOUR_HF_API_TOKEN"
 # WANDB_API_TOKEN = "YOUR_WANDB_API_TOKEN"
@@ -51,17 +54,6 @@ def generate_prompt(data_point):
 def generate_and_tokenize_prompt(data_point):
     full_prompt = generate_prompt(data_point)
     return tokenizer.apply_chat_template(full_prompt, return_dict=True)
-
-
-def compute_metrics(predictions) -> dict[str, float]:
-    labels = predictions.label_ids
-    preds = predictions.predictions.argmax(-1)
-
-    accuracy = len([pred for pred, label in zip(preds, labels) if pred == label]) / len(
-        preds
-    )
-    wandb.log({"eval/accuracy": accuracy})
-    return {"accuracy": accuracy}
 
 
 # Load model and prepare for QLoRA
@@ -156,11 +148,15 @@ trainer = transformers.Trainer(
     model=model,
     train_dataset=train_dataset,
     eval_dataset=validation_dataset,
-    compute_metrics=compute_metrics,
+    # compute_metrics=compute_metrics,
     args=training_args,
     data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False),
 )
 model.config.use_cache = False
+
+trainer.add_callback(
+    WandbTablePredictionAccuracyCallback(trainer, tokenizer, validation_dataset)
+)
 trainer.train()
 
 # Save model
