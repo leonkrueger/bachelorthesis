@@ -53,6 +53,16 @@ def generate_and_tokenize_prompt(data_point):
     return tokenizer.apply_chat_template(full_prompt, return_dict=True)
 
 
+def compute_metrics(predictions) -> dict[str, float]:
+    labels = predictions.label_ids
+    preds = predictions.predictions.argmax(-1)
+
+    return {
+        "accuracy": len([pred for pred, label in zip(preds, labels) if pred == label])
+        / len(preds)
+    }
+
+
 # Load model and prepare for QLoRA
 bnb_config = BitsAndBytesConfig(
     load_in_4bit=True,
@@ -144,6 +154,7 @@ trainer = transformers.Trainer(
     model=model,
     train_dataset=train_dataset,
     eval_dataset=validation_dataset,
+    compute_metrics=compute_metrics,
     args=training_args,
     data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False),
 )
