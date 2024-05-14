@@ -57,10 +57,11 @@ def compute_metrics(predictions) -> dict[str, float]:
     labels = predictions.label_ids
     preds = predictions.predictions.argmax(-1)
 
-    return {
-        "accuracy": len([pred for pred, label in zip(preds, labels) if pred == label])
-        / len(preds)
-    }
+    accuracy = len([pred for pred, label in zip(preds, labels) if pred == label]) / len(
+        preds
+    )
+    wandb.log({"eval/accuracy": accuracy})
+    return {"accuracy": accuracy}
 
 
 # Load model and prepare for QLoRA
@@ -135,6 +136,7 @@ training_args = transformers.TrainingArguments(
     per_device_train_batch_size=1,
     per_device_eval_batch_size=1,
     gradient_accumulation_steps=64,
+    eval_accumulation_steps=4,
     num_train_epochs=1,
     learning_rate=4e-4,
     fp16=True,
