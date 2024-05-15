@@ -16,10 +16,8 @@ from transformers import (
     AutoTokenizer,
     BitsAndBytesConfig,
 )
-from wandb_callback import WandbTablePredictionAccuracyCallback
 
 HF_API_TOKEN = "YOUR_HF_API_TOKEN"
-# WANDB_API_TOKEN = "YOUR_WANDB_API_TOKEN"
 
 model_id = "meta-llama/Meta-Llama-3-8B-Instruct"
 train_input_file = "missing_tables_12000"
@@ -29,6 +27,8 @@ wandb_run_name = "12000_queries_1_epochs"
 
 os.environ["WANDB_PROJECT"] = "bachelorthesis_missing_tables"
 wandb.login()
+
+wandb.define_metric("eval/accuracy", summary="min")
 
 
 def generate_prompt(data_point):
@@ -52,6 +52,17 @@ def generate_prompt(data_point):
 def generate_and_tokenize_prompt(data_point):
     full_prompt = generate_prompt(data_point)
     return tokenizer.apply_chat_template(full_prompt, return_dict=True)
+
+
+def compute_metrics(predictions) -> dict[str, float]:
+    labels = predictions.label_ids
+    preds = predictions.predictions.argmax(-1)
+
+    accuracy = len([pred for pred, label in zip(preds, labels) if pred == label]) / len(
+        preds
+    )
+    wandb.log({"eval/accuracy": accuracy})
+    return {"accuracy": accuracy}
 
 
 # Load model and prepare for QLoRA
@@ -126,13 +137,13 @@ training_args = transformers.TrainingArguments(
     per_device_train_batch_size=1,
     per_device_eval_batch_size=1,
     gradient_accumulation_steps=64,
-    eval_accumulation_steps=4,
+    eval_accumulation_steps=1,
     num_train_epochs=1,
     learning_rate=4e-4,
     fp16=True,
     logging_steps=1,
     evaluation_strategy="steps",
-    eval_steps=10,
+    eval_steps=1,
     save_strategy="no",
     output_dir=os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "output", "steps"
@@ -146,15 +157,12 @@ trainer = transformers.Trainer(
     model=model,
     train_dataset=train_dataset,
     eval_dataset=validation_dataset,
-    # compute_metrics=compute_metrics,
+    compute_metrics=compute_metrics,
     args=training_args,
     data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False),
 )
 model.config.use_cache = False
 
-trainer.add_callback(
-    WandbTablePredictionAccuracyCallback(trainer, tokenizer, validation_dataset)
-)
 trainer.train()
 
 # Save model
