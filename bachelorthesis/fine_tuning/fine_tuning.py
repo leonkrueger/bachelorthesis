@@ -16,9 +16,7 @@ from transformers import (
     AutoTokenizer,
     BitsAndBytesConfig,
 )
-from transformers.integrations import WandbCallback
-
-from .wandb_callback import WandbTablePredictionAccuracyCallback
+from wandb_callback import WandbTablePredictionAccuracyCallback
 
 HF_API_TOKEN = "YOUR_HF_API_TOKEN"
 # WANDB_API_TOKEN = "YOUR_WANDB_API_TOKEN"

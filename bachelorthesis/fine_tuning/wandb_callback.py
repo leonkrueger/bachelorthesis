@@ -28,7 +28,6 @@ class WandbTablePredictionAccuracyCallback(WandbCallback):
             trainer (Trainer): The Hugging Face Trainer instance.
             tokenizer (AutoTokenizer): The tokenizer associated with the model.
             val_dataset (Dataset): The validation dataset.
-            num_samples (int, optional): Number of samples to select from the validation dataset for generating predictions. Defaults to 100.
             freq (int, optional): Control the frequency of logging. Defaults to 2.
         """
         super().__init__()
@@ -40,6 +39,8 @@ class WandbTablePredictionAccuracyCallback(WandbCallback):
     def on_evaluate(self, args, state, control, **kwargs):
         super().on_evaluate(args, state, control, **kwargs)
         # control the frequency of logging by logging the predictions every `freq` epochs
+        print("eval_steps:", state.eval_steps)
+        print("global_step:", state.global_step)
         if state.eval_steps % self.freq == 0:
             # generate predictions
             predictions = self.trainer.predict(self.validation_dataset)
