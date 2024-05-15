@@ -55,8 +55,11 @@ def generate_and_tokenize_prompt(data_point):
 
 
 def compute_metrics(predictions) -> dict[str, float]:
-    labels = predictions.label_ids
-    preds = predictions.predictions.argmax(-1)
+    preds, labels = predictions
+    if isinstance(preds, tuple):
+        preds = preds[0]
+    decoded_preds = tokenizer.batch_decode(preds, skip_special_tokens=True)
+    print(decoded_preds)
 
     accuracy = len([pred for pred, label in zip(preds, labels) if pred == label]) / len(
         preds
