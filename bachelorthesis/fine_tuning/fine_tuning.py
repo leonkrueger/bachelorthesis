@@ -27,7 +27,7 @@ wandb_run_name = "12000_queries_1_epochs"
 
 os.environ["WANDB_PROJECT"] = "bachelorthesis_missing_tables"
 wandb.login()
-
+wandb.init(name=wandb_run_name)
 wandb.define_metric("eval/accuracy", summary="min")
 
 
@@ -63,6 +63,15 @@ def compute_metrics(predictions) -> dict[str, float]:
     )
     wandb.log({"eval/accuracy": accuracy})
     return {"accuracy": accuracy}
+
+
+def preprocess_logits_for_metrics(logits, labels):
+    """
+    Original Trainer may have a memory leak.
+    This is a workaround to avoid storing too many tensors that are not needed.
+    """
+    pred_ids = torch.argmax(logits[0], dim=-1)
+    return pred_ids, labels
 
 
 # Load model and prepare for QLoRA
@@ -137,7 +146,7 @@ training_args = transformers.TrainingArguments(
     per_device_train_batch_size=1,
     per_device_eval_batch_size=1,
     gradient_accumulation_steps=64,
-    eval_accumulation_steps=1,
+    eval_accumulation_steps=8,
     num_train_epochs=1,
     learning_rate=4e-4,
     fp16=True,
@@ -158,6 +167,7 @@ trainer = transformers.Trainer(
     train_dataset=train_dataset,
     eval_dataset=validation_dataset,
     compute_metrics=compute_metrics,
+    preprocess_logits_for_metrics=preprocess_logits_for_metrics,
     args=training_args,
     data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False),
 )
