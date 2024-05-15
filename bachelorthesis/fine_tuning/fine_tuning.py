@@ -28,7 +28,7 @@ wandb_run_name = "12000_queries_1_epochs"
 os.environ["WANDB_PROJECT"] = "bachelorthesis_missing_tables"
 wandb.login()
 wandb.init(name=wandb_run_name)
-wandb.define_metric("eval/accuracy", summary="min")
+# wandb.define_metric("eval/accuracy", summary="min")
 
 
 def generate_prompt(data_point):
@@ -54,27 +54,27 @@ def generate_and_tokenize_prompt(data_point):
     return tokenizer.apply_chat_template(full_prompt, return_dict=True)
 
 
-def compute_metrics(predictions) -> dict[str, float]:
-    preds, labels = predictions
-    if isinstance(preds, tuple):
-        preds = preds[0]
-    decoded_preds = tokenizer.batch_decode(preds, skip_special_tokens=True)
-    print(decoded_preds)
+# def compute_metrics(predictions) -> dict[str, float]:
+#     preds, labels = predictions
+#     if isinstance(preds, tuple):
+#         preds = preds[0]
+#     decoded_preds = tokenizer.batch_decode(preds, skip_special_tokens=True)
+#     print(decoded_preds)
 
-    accuracy = len([pred for pred, label in zip(preds, labels) if pred == label]) / len(
-        preds
-    )
-    wandb.log({"eval/accuracy": accuracy})
-    return {"accuracy": accuracy}
+#     accuracy = len([pred for pred, label in zip(preds, labels) if pred == label]) / len(
+#         preds
+#     )
+#     wandb.log({"eval/accuracy": accuracy})
+#     return {"accuracy": accuracy}
 
 
-def preprocess_logits_for_metrics(logits, labels):
-    """
-    Original Trainer may have a memory leak.
-    This is a workaround to avoid storing too many tensors that are not needed.
-    """
-    pred_ids = torch.argmax(logits[0], dim=-1)
-    return pred_ids, labels
+# def preprocess_logits_for_metrics(logits, labels):
+#     """
+#     Original Trainer may have a memory leak.
+#     This is a workaround to avoid storing too many tensors that are not needed.
+#     """
+#     pred_ids = torch.argmax(logits[0], dim=-1)
+#     return pred_ids, labels
 
 
 # Load model and prepare for QLoRA
@@ -155,7 +155,7 @@ training_args = transformers.TrainingArguments(
     fp16=True,
     logging_steps=1,
     evaluation_strategy="steps",
-    eval_steps=1,
+    eval_steps=10,
     save_strategy="no",
     output_dir=os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "output", "steps"
@@ -169,8 +169,8 @@ trainer = transformers.Trainer(
     model=model,
     train_dataset=train_dataset,
     eval_dataset=validation_dataset,
-    compute_metrics=compute_metrics,
-    preprocess_logits_for_metrics=preprocess_logits_for_metrics,
+    # compute_metrics=compute_metrics,
+    # preprocess_logits_for_metrics=preprocess_logits_for_metrics,
     args=training_args,
     data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False),
 )
