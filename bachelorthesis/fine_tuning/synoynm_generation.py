@@ -98,11 +98,7 @@ with open(
 
 synonyms = defaultdict(lambda: defaultdict(lambda: []))
 
-for i, data_point in tqdm(enumerate(synonym_generation_data)):
-    # cuda out of memory error if we do not empty the cache manually
-    if i % 50 == 0:
-        gc.collect()
-        torch.cuda.empty_cache()
+for data_point in tqdm(synonym_generation_data):
     generate_synonyms(data_point, synonyms)
 
 with open(
