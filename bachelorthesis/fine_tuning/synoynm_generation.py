@@ -3,6 +3,7 @@ import os
 from collections import defaultdict
 
 import torch
+from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
 HF_API_TOKEN = "YOUR_HF_API_TOKEN"
@@ -74,9 +75,6 @@ def generate_synonyms(data_point: dict[str, str], synonyms) -> None:
             and predicted_name
             not in synonyms[data_point["database_name"]]["table_name"]
         ):
-            print(
-                f"Predicted name '{predicted_name}' for table '{data_point['table_name']}'"
-            )
             synonyms[data_point["database_name"]]["table_name"].append(predicted_name)
 
 
@@ -96,7 +94,7 @@ with open(
 
 synonyms = defaultdict(lambda: defaultdict(lambda: []))
 
-for data_point in synonym_generation_data:
+for data_point in tqdm(synonym_generation_data):
     generate_synonyms(data_point, synonyms)
 
 with open(
