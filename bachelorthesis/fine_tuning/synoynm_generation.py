@@ -45,6 +45,12 @@ def run_prompt(messages: list[dict[str, str]]) -> str:
     )[0]["generated_text"][len(prompt) :].strip()
 
 
+def remove_quotes(name: str) -> str:
+    if name.startswith("'") or name.startswith('"'):
+        return name[1:-1]
+    return name
+
+
 def generate_synonyms(data_point: dict[str, str], synonyms) -> None:
     messages = [
         {
@@ -61,7 +67,7 @@ def generate_synonyms(data_point: dict[str, str], synonyms) -> None:
     ]
 
     for i in range(3):
-        predicted_name = run_prompt(messages)
+        predicted_name = remove_quotes(run_prompt(messages))
 
         if (
             predicted_name != data_point["table_name"]
