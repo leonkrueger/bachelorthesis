@@ -1,6 +1,6 @@
-from collections import defaultdict
 import json
 import os
+from collections import defaultdict
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
@@ -55,7 +55,7 @@ def generate_synonyms(data_point: dict[str, str], synonyms) -> None:
         {
             "role": "user",
             "content": "Predict a different name of a database table for this insert query.\n"
-            f"Query: {data_point["query"]}\n"
+            f"Query: {''.join(data_point['query'])}\n"
             "Table:",
         },
     ]
@@ -63,8 +63,14 @@ def generate_synonyms(data_point: dict[str, str], synonyms) -> None:
     for i in range(3):
         predicted_name = run_prompt(messages)
 
-        if predicted_name != data_point["table_name"] and predicted_name not in synonyms[data_point["database_name"]]["table_name"]:
-            print(f"Predicted name '{predicted_name}' for table '{data_point['table_name']}'")
+        if (
+            predicted_name != data_point["table_name"]
+            and predicted_name
+            not in synonyms[data_point["database_name"]]["table_name"]
+        ):
+            print(
+                f"Predicted name '{predicted_name}' for table '{data_point['table_name']}'"
+            )
             synonyms[data_point["database_name"]]["table_name"].append(predicted_name)
 
 
