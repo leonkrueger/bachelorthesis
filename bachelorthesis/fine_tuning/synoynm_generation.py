@@ -77,9 +77,11 @@ def generate_synonyms(data_point: dict[str, str], synonyms) -> None:
         if (
             predicted_name != data_point["table_name"]
             and predicted_name
-            not in synonyms[data_point["database_name"]]["table_name"]
+            not in synonyms[data_point["database_name"]][data_point["table_name"]]
         ):
-            synonyms[data_point["database_name"]]["table_name"].append(predicted_name)
+            synonyms[data_point["database_name"]][data_point["table_name"]].append(
+                predicted_name
+            )
 
 
 with open(
@@ -92,7 +94,8 @@ with open(
         "bachelorthesis",
         "fine_tuning",
         "synonym_generation_data.json",
-    )
+    ),
+    encoding="utf-8",
 ) as synonym_generation_data_file:
     synonym_generation_data = json.load(synonym_generation_data_file)
 
@@ -111,6 +114,8 @@ with open(
         "bachelorthesis",
         "fine_tuning",
         "synonyms.json",
-    )
+    ),
+    mode="w",
+    encoding="utf-8",
 ) as synonyms_file:
     json.dump(synonyms, synonyms_file)
