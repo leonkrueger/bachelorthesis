@@ -54,6 +54,9 @@ def remove_quotes(name: str) -> str:
 
 
 def generate_synonyms(data_point: dict[str, str], synonyms) -> None:
+    if len(data_point["query"]) == 0:
+        return
+
     messages = [
         {
             "role": "system",
