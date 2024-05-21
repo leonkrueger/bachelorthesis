@@ -167,3 +167,6 @@ bachelorthesis/fine_tuning/output
 
 # Wandb
 wandb/
+
+# Test file
+bachelorthesis/test.py
