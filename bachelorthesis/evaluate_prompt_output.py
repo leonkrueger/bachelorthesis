@@ -6,6 +6,7 @@ from typing import Any, Dict, List
 
 import torch
 from peft import PeftModel
+from tqdm import tqdm
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -21,7 +22,11 @@ HF_API_TOKEN = "YOUR_HF_API_TOKEN"
 # Switch if necessary
 strategy_name = "missing_tables_1500"
 fine_tuned_model_folder = "missing_tables_1500_1"
-evaluation_input_file = "table_not_in_database"
+evaluation_input_files = [
+    "table_not_in_database",
+    "table_in_database",
+    "different_name_in_database",
+]
 evaluation_folder = os.path.join("further_evaluation", "error_cases_missing_tables")
 
 # Depends on if the script is run in Docker or as plain python
@@ -135,7 +140,7 @@ def run_experiments_for_strategy(
     evaluation_input: List[Dict[str, Any]]
 ) -> List[Dict[str, Any]]:
     result_points = []
-    for data_point in evaluation_input:
+    for data_point in tqdm(evaluation_input):
         if evaluation_input_file == "different_name_in_database":
             # Get different table name first
             result_point = copy.deepcopy(data_point)
@@ -171,25 +176,27 @@ def run_experiments_for_strategy(
     return result_points
 
 
-with open(
-    os.path.join(evaluation_folder, evaluation_input_file + ".json"), encoding="utf-8"
-) as evaluation_file:
-    evaluation_input = json.load(evaluation_file)
+for evaluation_input_file in tqdm(evaluation_input_files):
+    with open(
+        os.path.join(evaluation_folder, evaluation_input_file + ".json"),
+        encoding="utf-8",
+    ) as evaluation_file:
+        evaluation_input = json.load(evaluation_file)
 
-output_folder = os.path.join(evaluation_folder, strategy_name)
-output_file_path = os.path.join(
-    output_folder, "results_" + evaluation_input_file + ".json"
-)
+    output_folder = os.path.join(evaluation_folder, strategy_name)
+    output_file_path = os.path.join(
+        output_folder, "results_" + evaluation_input_file + ".json"
+    )
 
-# Continue if experiment was already run
-with open(output_file_path, encoding="utf-8") as results_file:
-    if results_file.read().strip() != "":
-        exit()
+    # Continue if experiment was already run
+    with open(output_file_path, encoding="utf-8") as results_file:
+        if results_file.read().strip() != "":
+            exit()
 
-results = run_experiments_for_strategy(evaluation_input)
+    results = run_experiments_for_strategy(evaluation_input)
 
-with open(output_file_path, mode="w", encoding="utf-8") as output_file:
-    json.dump(results, output_file)
+    with open(output_file_path, mode="w", encoding="utf-8") as output_file:
+        json.dump(results, output_file)
 
 errors_file.close()
 os.chmod(errors_file_path, 0o777)
