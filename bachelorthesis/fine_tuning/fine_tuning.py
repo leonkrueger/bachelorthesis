@@ -4,6 +4,7 @@
 import os
 
 import bitsandbytes as bnb
+import numpy as np
 import torch
 import torch.nn as nn
 import transformers
@@ -43,29 +44,29 @@ def generate_prompt(data_point):
         },
         {
             "role": "user",
-            "content": f"{data_point['Instruction']}\n" "Table:",
+            "content": f"{data_point['Instruction']}\nTable:",
         },
-        {"role": "assistant", "content": f"{data_point['Response'][7:]}"},
     ]
 
 
 def generate_and_tokenize_prompt(data_point):
     full_prompt = generate_prompt(data_point)
-    return tokenizer.apply_chat_template(full_prompt, return_dict=True)
+    inputs = tokenizer.apply_chat_template(full_prompt)
+    outputs = tokenizer(data_point["Response"])
+    inputs["labels"] = outputs
+    return inputs
 
 
-# def compute_metrics(predictions) -> dict[str, float]:
-#     preds, labels = predictions
-#     if isinstance(preds, tuple):
-#         preds = preds[0]
-#     decoded_preds = tokenizer.batch_decode(preds, skip_special_tokens=True)
-#     print(decoded_preds)
+def compute_metrics(predictions) -> dict[str, float]:
+    logits, labels = predictions
+    preds = np.argmax(logits, axis=-1)
+    print("Preds:", preds, ", Labels:", labels)
+    # decoded_preds = tokenizer.batch_decode(preds, skip_special_tokens=True)
+    # print(decoded_preds)
 
-#     accuracy = len([pred for pred, label in zip(preds, labels) if pred == label]) / len(
-#         preds
-#     )
-#     wandb.log({"eval/accuracy": accuracy})
-#     return {"accuracy": accuracy}
+    accuracy = (preds == labels).float().mean()
+    # wandb.log({"eval/accuracy": accuracy})
+    return {"accuracy": accuracy}
 
 
 # def preprocess_logits_for_metrics(logits, labels):
@@ -169,7 +170,7 @@ trainer = transformers.Trainer(
     model=model,
     train_dataset=train_dataset,
     eval_dataset=validation_dataset,
-    # compute_metrics=compute_metrics,
+    compute_metrics=compute_metrics,
     # preprocess_logits_for_metrics=preprocess_logits_for_metrics,
     args=training_args,
     data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False),
