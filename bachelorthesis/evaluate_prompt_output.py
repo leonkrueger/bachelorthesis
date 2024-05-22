@@ -184,14 +184,16 @@ for evaluation_input_file in tqdm(evaluation_input_files):
         evaluation_input = json.load(evaluation_file)
 
     output_folder = os.path.join(evaluation_folder, strategy_name)
+    os.makedirs(output_folder, exist_ok=True)
     output_file_path = os.path.join(
         output_folder, "results_" + evaluation_input_file + ".json"
     )
 
     # Continue if experiment was already run
-    with open(output_file_path, encoding="utf-8") as results_file:
-        if results_file.read().strip() != "":
-            exit()
+    if os.path.exists(output_file_path):
+        with open(output_file_path, encoding="utf-8") as results_file:
+            if results_file.read().strip() != "":
+                continue
 
     results = run_experiments_for_strategy(evaluation_input)
 
