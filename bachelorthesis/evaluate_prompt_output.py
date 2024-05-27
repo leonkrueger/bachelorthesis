@@ -48,28 +48,36 @@ model_name = "meta-llama/Meta-Llama-3-8B-Instruct"
 max_new_tokens = 10
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, token=HF_API_TOKEN)
-bnb_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    load_4bit_use_double_quant=True,
-    bnb_4bit_quant_type="nf4",
-    bnb_4bit_compute_dtype=torch.bfloat16,
-)
-base_model = AutoModelForCausalLM.from_pretrained(
-    model_name,
-    token=HF_API_TOKEN,
-    quantization_config=bnb_config,
-    device_map="auto",
-)
-model = PeftModel.from_pretrained(
-    base_model,
-    os.path.join(
-        os.path.dirname(os.path.realpath(__file__)),
-        "fine_tuning",
-        "output",
-        fine_tuned_model_folder,
-    ),
-)
-model = model.merge_and_unload()
+if fine_tuned_model_folder:
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        load_4bit_use_double_quant=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_compute_dtype=torch.bfloat16,
+    )
+    base_model = AutoModelForCausalLM.from_pretrained(
+        model_name,
+        token=HF_API_TOKEN,
+        quantization_config=bnb_config,
+        device_map="auto",
+    )
+    model = PeftModel.from_pretrained(
+        base_model,
+        os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            "fine_tuning",
+            "output",
+            fine_tuned_model_folder,
+        ),
+    )
+    model = model.merge_and_unload()
+else:
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name,
+        token=HF_API_TOKEN,
+        torch_dtype=torch.bfloat16,
+        device_map="auto",
+    )
 
 tokenizer.pad_token = tokenizer.eos_token
 pipe = pipeline(
