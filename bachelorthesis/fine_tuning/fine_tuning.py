@@ -54,27 +54,32 @@ def generate_and_tokenize_prompt(data_point):
     return tokenizer.apply_chat_template(full_prompt, return_dict=True)
 
 
-# def compute_metrics(predictions) -> dict[str, float]:
-#     preds, labels = predictions
-#     if isinstance(preds, tuple):
-#         preds = preds[0]
-#     decoded_preds = tokenizer.batch_decode(preds, skip_special_tokens=True)
-#     print(decoded_preds)
+def compute_metrics(predictions) -> dict[str, float]:
+    labels = predictions.label_ids
+    preds = predictions.predictions  # .argmax(-1)
+    # if isinstance(preds, tuple):
+    #     preds = preds[0]
+    print("Labels:", labels)
+    print("Preds:", preds)
+    decoded_preds = tokenizer.batch_decode(preds, skip_special_tokens=True)
+    decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
+    print("Decoded Labels:", decoded_labels)
+    print("Decoded Preds:", decoded_preds)
 
-#     accuracy = len([pred for pred, label in zip(preds, labels) if pred == label]) / len(
-#         preds
-#     )
-#     wandb.log({"eval/accuracy": accuracy})
-#     return {"accuracy": accuracy}
+    accuracy = len([pred for pred, label in zip(preds, labels) if pred == label]) / len(
+        preds
+    )
+    wandb.log({"eval/accuracy": accuracy})
+    return {"accuracy": accuracy}
 
 
-# def preprocess_logits_for_metrics(logits, labels):
-#     """
-#     Original Trainer may have a memory leak.
-#     This is a workaround to avoid storing too many tensors that are not needed.
-#     """
-#     pred_ids = torch.argmax(logits[0], dim=-1)
-#     return pred_ids, labels
+def preprocess_logits_for_metrics(logits, labels):
+    """
+    Original Trainer may have a memory leak.
+    This is a workaround to avoid storing too many tensors that are not needed.
+    """
+    pred_ids = torch.argmax(logits[0], dim=-1)
+    return pred_ids, labels
 
 
 # Load model and prepare for QLoRA
@@ -145,7 +150,7 @@ output_dir = os.path.join(
 os.makedirs(output_dir, exist_ok=True)
 
 # Configure training arguments
-training_args = transformers.TrainingArguments(
+training_args = transformers.Seq2SeqTrainingArguments(
     per_device_train_batch_size=1,
     per_device_eval_batch_size=1,
     gradient_accumulation_steps=64,
@@ -156,6 +161,8 @@ training_args = transformers.TrainingArguments(
     logging_steps=1,
     evaluation_strategy="steps",
     eval_steps=10,
+    predict_with_generate=True,
+    generation_max_length=30,
     save_strategy="no",
     output_dir=os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "output", "steps"
@@ -165,12 +172,12 @@ training_args = transformers.TrainingArguments(
 )
 
 # Train model
-trainer = transformers.Trainer(
+trainer = transformers.Seq2SeqTrainer(
     model=model,
     train_dataset=train_dataset,
     eval_dataset=validation_dataset,
-    # compute_metrics=compute_metrics,
-    # preprocess_logits_for_metrics=preprocess_logits_for_metrics,
+    compute_metrics=compute_metrics,
+    preprocess_logits_for_metrics=preprocess_logits_for_metrics,
     args=training_args,
     data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False),
 )
