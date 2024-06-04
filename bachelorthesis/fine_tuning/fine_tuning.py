@@ -17,7 +17,7 @@ from transformers import (
     AutoTokenizer,
     BitsAndBytesConfig,
 )
-
+np.set_printoptions(threshold=np.inf)
 HF_API_TOKEN = "YOUR_HF_API_TOKEN"
 
 model_id = "meta-llama/Meta-Llama-3-8B-Instruct"
@@ -32,8 +32,8 @@ wandb.init(name=wandb_run_name)
 # wandb.define_metric("eval/accuracy", summary="min")
 
 
-def generate_prompt(data_point):
-    return [
+def generate_prompt(data_point, validation_set):
+    messages = [
         {
             "role": "system",
             "content": "You are an intelligent database that predicts on which table a SQL-insert should be executed. "
@@ -46,15 +46,21 @@ def generate_prompt(data_point):
             "role": "user",
             "content": f"{data_point['Instruction']}\nTable:",
         },
-        # {"role": "assistant", "content": f"{data_point['Response'][7:]}"},
+        #{"role": "assistant", "content": f"{data_point['Response'][7:]}"},
     ]
+    if not validation_set:
+        messages.append({"role": "assistant", "content": f"{data_point['Response'][7:]}"})
+    return messages
 
 
-def generate_and_tokenize_prompt(data_point):
-    full_prompt = generate_prompt(data_point)
-    inputs = tokenizer.apply_chat_template(full_prompt)
+def generate_and_tokenize_prompt(data_point, validation_set):
+    full_prompt = generate_prompt(data_point, validation_set)
+    inputs = tokenizer.apply_chat_template(full_prompt, truncation=True, return_dict=True)
     output = tokenizer(data_point["Response"])
-    inputs["labels"] = output
+    inputs["labels"] = output["input_ids"]
+    del inputs["attention_mask"]
+    if validation_set:
+        print(inputs)
     return inputs
 
 
@@ -63,14 +69,20 @@ def compute_metrics(predictions) -> dict[str, float]:
     preds = predictions.predictions  # .argmax(-1)
     # if isinstance(preds, tuple):
     #     preds = preds[0]
-    # labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
+    print("Preds[0]:", preds[0])
+    print("Preds[1]:", preds[1])
+    print("Labels:", labels)
+    test = np.where(preds[0] != -100, preds[0], tokenizer.pad_token_id)
+    decoded_test = tokenizer.batch_decode([test], skip_special_tokens=True)
+    print("Decoded Preds[0]:", decoded_test)
+    labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
     preds = np.where(preds[1] != -100, preds[1], tokenizer.pad_token_id)
     decoded_preds = tokenizer.batch_decode(preds, skip_special_tokens=True)
     decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
     print("Decoded Labels:", decoded_labels)
     print("Decoded Preds:", decoded_preds)
 
-    accuracy = len([pred for pred, label in zip(preds, labels) if pred == label]) / len(
+    accuracy = len([pred for pred, label in zip(decoded_preds, decoded_labels) if pred == label]) / len(
         preds
     )
     wandb.log({"eval/accuracy": accuracy})
@@ -129,7 +141,7 @@ train_dataset_name = os.path.join(
     f"{train_input_file}.json",
 )
 train_dataset = load_dataset("json", data_files=train_dataset_name, split="train")
-train_dataset = train_dataset.shuffle().map(generate_and_tokenize_prompt)
+train_dataset = train_dataset.shuffle().map(lambda data_point: generate_and_tokenize_prompt(data_point, False))
 
 # Create validation dataset
 validation_dataset_name = os.path.join(
@@ -146,7 +158,7 @@ validation_dataset_name = os.path.join(
 validation_dataset = load_dataset(
     "json", data_files=validation_dataset_name, split="train"
 )
-validation_dataset = validation_dataset.shuffle().map(generate_and_tokenize_prompt)
+validation_dataset = validation_dataset.shuffle().take(1).map(lambda data_point: generate_and_tokenize_prompt(data_point, True))
 
 output_dir = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), "output", output_dir
@@ -164,9 +176,9 @@ training_args = transformers.Seq2SeqTrainingArguments(
     fp16=True,
     logging_steps=1,
     evaluation_strategy="steps",
-    eval_steps=10,
+    eval_steps=1,
     predict_with_generate=True,
-    generation_max_length=30,
+    # generation_max_length=30,
     save_strategy="no",
     output_dir=os.path.join(
         os.path.dirname(os.path.realpath(__file__)), "output", "steps"
@@ -178,6 +190,7 @@ training_args = transformers.Seq2SeqTrainingArguments(
 # Train model
 trainer = transformers.Seq2SeqTrainer(
     model=model,
+    tokenizer=tokenizer,
     train_dataset=train_dataset,
     eval_dataset=validation_dataset,
     compute_metrics=compute_metrics,
