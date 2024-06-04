@@ -4,6 +4,7 @@
 import os
 
 import bitsandbytes as bnb
+import numpy as np
 import torch
 import torch.nn as nn
 import transformers
@@ -43,15 +44,18 @@ def generate_prompt(data_point):
         },
         {
             "role": "user",
-            "content": f"{data_point['Instruction']}\n" "Table:",
+            "content": f"{data_point['Instruction']}\nTable:",
         },
-        {"role": "assistant", "content": f"{data_point['Response'][7:]}"},
+        # {"role": "assistant", "content": f"{data_point['Response'][7:]}"},
     ]
 
 
 def generate_and_tokenize_prompt(data_point):
     full_prompt = generate_prompt(data_point)
-    return tokenizer.apply_chat_template(full_prompt, return_dict=True)
+    inputs = tokenizer.apply_chat_template(full_prompt)
+    output = tokenizer(data_point["Response"])
+    inputs["labels"] = output
+    return inputs
 
 
 def compute_metrics(predictions) -> dict[str, float]:
@@ -59,8 +63,8 @@ def compute_metrics(predictions) -> dict[str, float]:
     preds = predictions.predictions  # .argmax(-1)
     # if isinstance(preds, tuple):
     #     preds = preds[0]
-    print("Labels:", labels)
-    print("Preds:", preds)
+    # labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
+    preds = np.where(preds[1] != -100, preds[1], tokenizer.pad_token_id)
     decoded_preds = tokenizer.batch_decode(preds, skip_special_tokens=True)
     decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
     print("Decoded Labels:", decoded_labels)
