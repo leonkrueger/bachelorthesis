@@ -10,11 +10,11 @@ from datasets import load_dataset
 from peft import LoraConfig, PeftConfig, get_peft_model, prepare_model_for_kbit_training
 from torch.utils.data.dataloader import DataLoader
 from transformers import (
-    Adam,
     AutoConfig,
     AutoModelForCausalLM,
     AutoTokenizer,
     BitsAndBytesConfig,
+    DataCollatorWithPadding,
 )
 
 HF_API_TOKEN = "YOUR_HF_API_TOKEN"
@@ -98,6 +98,8 @@ train_dataset_name = os.path.join(
 )
 train_dataset = load_dataset("json", data_files=train_dataset_name, split="train")
 train_dataset = train_dataset.shuffle().map(generate_and_tokenize_prompt)
+train_dataset = train_dataset.remove_columns(["Instruction", "Response"])
+train_dataset.set_format("torch")
 
 # Create validation dataset
 validation_dataset_name = os.path.join(
@@ -126,8 +128,9 @@ training_args = {
     "per_device_eval_batch_size": 1,  #
     "gradient_accumulation_steps": 64,
     "eval_accumulation_steps": 8,  #
+    "gradient_checkpointing": False,
     "optim": "adamw_bnb_8bit",
-    "num_train_epochs": 1,  #
+    "num_train_epochs": 1,
     "learning_rate": 4e-4,
     "fp16": True,
     "logging_steps": 1,  #
@@ -141,28 +144,38 @@ training_args = {
     "run_name": wandb_run_name,  #
 }
 
+data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 dataloader = DataLoader(
-    train_dataset, batch_size=training_args.per_device_train_batch_size
+    train_dataset,
+    batch_size=training_args["per_device_train_batch_size"],
+    collate_fn=data_collator,
 )
-optim = bnb.optim.Adam8bit(model.parameters(), training_args.learning_rate)
+optim = bnb.optim.Adam8bit(model.parameters(), training_args["learning_rate"])
 
-if training_args.gradient_checkpointing:
+if training_args["gradient_checkpointing"]:
     model.gradient_checkpointing_enable()
 
-accelerator = Accelerator(fp16=training_args.fp16)
+accelerator = Accelerator(mixed_precision="fp16" if training_args["fp16"] else "no")
 model, optimizer, dataloader = accelerator.prepare(model, optim, dataloader)
 
 model.train()
 accumulated_loss = 0
-for step, batch in enumerate(dataloader, start=1):
-    loss = model(**batch).loss
-    loss = loss / training_args.gradient_accumulation_steps
-    accumulated_loss += loss
-    accelerator.backward(loss)
-    if step % training_args.gradient_accumulation_steps == 0:
-        wandb.log(
-            {"train/loss": accumulated_loss},
-            step=int(step / training_args.gradient_accumulation_steps),
-        )
-        optimizer.step()
-        optimizer.zero_grad()
+for epoch in range(training_args["num_train_epochs"]):
+    for step, batch in enumerate(dataloader, start=1):
+        labels = batch["input_ids"].clone()
+        logits = model(**batch).logits
+
+        loss_fct = nn.CrossEntropyLoss()
+        loss = loss_fct(logits.view(-1), labels.view(-1))
+        # loss = loss / training_args["gradient_accumulation_steps"]
+        accumulated_loss += loss
+        accelerator.backward(loss)
+        if step % training_args["gradient_accumulation_steps"] == 0 or step == len(
+            dataloader
+        ):
+            wandb.log(
+                {"train/loss": accumulated_loss},
+                step=int(step / training_args["gradient_accumulation_steps"]),
+            )
+            optimizer.step()
+            optimizer.zero_grad()
