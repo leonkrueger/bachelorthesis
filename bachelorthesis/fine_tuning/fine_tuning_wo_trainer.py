@@ -52,8 +52,10 @@ def generate_prompt(data_point):
 def generate_and_tokenize_prompt(data_point):
     full_prompt = generate_prompt(data_point)
     return_dict = tokenizer.apply_chat_template(full_prompt, return_dict=True)
-    print(return_dict["input_ids"])
-    return_dict["labels"] = return_dict["input_ids"].clone()
+    input_ids = torch.tensor(return_dict["input_ids"])
+    labels = input_ids.clone()
+    return_dict["labels"] = labels[1:].contiguous()
+    return_dict["input_ids"] = input_ids[:-1].contiguous()
     return return_dict
 
 
