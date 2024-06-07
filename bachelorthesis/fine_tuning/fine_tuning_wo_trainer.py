@@ -51,7 +51,10 @@ def generate_prompt(data_point):
 
 def generate_and_tokenize_prompt(data_point):
     full_prompt = generate_prompt(data_point)
-    return tokenizer.apply_chat_template(full_prompt, return_dict=True)
+    return_dict = tokenizer.apply_chat_template(full_prompt, return_dict=True)
+    print(return_dict["input_ids"])
+    return_dict["labels"] = return_dict["input_ids"].clone()
+    return return_dict
 
 
 # Load model and prepare for QLoRA
@@ -162,12 +165,8 @@ model.train()
 accumulated_loss = 0
 for epoch in range(training_args["num_train_epochs"]):
     for step, batch in enumerate(dataloader, start=1):
-        labels = batch["input_ids"].clone()
-        logits = model(**batch).logits
-
-        loss_fct = nn.CrossEntropyLoss()
-        loss = loss_fct(logits.view(-1), labels.view(-1))
-        # loss = loss / training_args["gradient_accumulation_steps"]
+        loss = model(**batch).loss
+        loss = loss / training_args["gradient_accumulation_steps"]
         accumulated_loss += loss
         accelerator.backward(loss)
         if step % training_args["gradient_accumulation_steps"] == 0 or step == len(
