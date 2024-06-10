@@ -94,14 +94,18 @@ terminators = [
 
 def generate_prompt(data_point):
     database_string = (
-        "\n".join(
-            [
-                f"- Table: {table}, Columns: [{', '.join([column[0] for column in columns])}]"
-                for table, columns in data_point["database_state"].items()
-            ]
+        data_point["database_state"]
+        if isinstance(data_point["database_state"], str)
+        else (
+            "\n".join(
+                [
+                    f"- Table: {table}, Columns: [{', '.join([column[0] for column in columns])}]"
+                    for table, columns in data_point["database_state"].items()
+                ]
+            )
+            if len(data_point["database_state"]) > 0
+            else "No table exists yet."
         )
-        if len(data_point["database_state"]) > 0
-        else "No table exists yet."
     )
 
     return [
