@@ -179,9 +179,15 @@ def run_experiments_for_strategy(
             if table_name in database_tables:
                 continue
 
-            result_point["database_state"][table_name] = result_point[
-                "database_state"
-            ].pop(result_point["expected_table_name"])
+            if isinstance(result_point["database_state"], str):
+                result_point["database_state"].replace(
+                    f"Table {result_point['expected_table_name']}:",
+                    f"Table {table_name}:",
+                )
+            else:
+                result_point["database_state"][table_name] = result_point[
+                    "database_state"
+                ].pop(result_point["expected_table_name"])
             result_point["expected_table_name"] = table_name
 
             # Run evaluation prompt
