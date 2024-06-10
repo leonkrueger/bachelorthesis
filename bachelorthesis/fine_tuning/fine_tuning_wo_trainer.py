@@ -3,6 +3,7 @@ import os
 import bitsandbytes as bnb
 import torch
 import torch.nn as nn
+import tqdm
 import transformers
 import wandb
 from accelerate import Accelerator
@@ -15,6 +16,7 @@ from transformers import (
     AutoTokenizer,
     BitsAndBytesConfig,
     DataCollatorWithPadding,
+    get_scheduler,
 )
 
 HF_API_TOKEN = "YOUR_HF_API_TOKEN"
@@ -160,23 +162,40 @@ optim = bnb.optim.Adam8bit(model.parameters(), training_args["learning_rate"])
 if training_args["gradient_checkpointing"]:
     model.gradient_checkpointing_enable()
 
-accelerator = Accelerator(mixed_precision="fp16" if training_args["fp16"] else "no")
+accelerator = Accelerator(
+    mixed_precision="fp16" if training_args["fp16"] else "no",
+    gradient_accumulation_steps=training_args["gradient_accumulation_steps"],
+    log_with="wandb",
+)
+
 model, optimizer, dataloader = accelerator.prepare(model, optim, dataloader)
 
+training_steps = training_args["num_train_epochs"] * len(dataloader)
+scheduler = get_scheduler(
+    "linear",
+    optimizer=optimizer,
+    num_warmup_steps=(),
+    num_training_Steps=training_steps,
+)
+progress_bar = tqdm(range(training_steps))
+
 model.train()
-accumulated_loss = 0
+# accumulated_loss = 0
 for epoch in range(training_args["num_train_epochs"]):
-    for step, batch in enumerate(dataloader, start=1):
-        loss = model(**batch).loss
-        loss = loss / training_args["gradient_accumulation_steps"]
-        accumulated_loss += loss
-        accelerator.backward(loss)
-        if step % training_args["gradient_accumulation_steps"] == 0 or step == len(
-            dataloader
-        ):
-            wandb.log(
-                {"train/loss": accumulated_loss},
-                step=int(step / training_args["gradient_accumulation_steps"]),
-            )
+    for batch in dataloader:
+        with accelerator.accumulate(model):
+            loss = model(**batch).loss
+            # loss = loss / training_args["gradient_accumulation_steps"]
+            # accumulated_loss += loss
+            accelerator.backward(loss)
+            # if step % training_args["gradient_accumulation_steps"] == 0 or step == len(
+            #     dataloader
+            # ):
+            # wandb.log(
+            #     {"train/loss": accumulated_loss},
+            #     step=int(step / training_args["gradient_accumulation_steps"]),
+            # )
             optimizer.step()
+            scheduler.step()
             optimizer.zero_grad()
+            progress_bar.update(1)
