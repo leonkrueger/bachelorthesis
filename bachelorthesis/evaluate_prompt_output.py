@@ -45,7 +45,7 @@ errors_file = open(errors_file_path, "w", encoding="utf-8")
 
 # Create model
 model_name = "meta-llama/Meta-Llama-3-8B-Instruct"
-max_new_tokens = 10
+max_new_tokens = 30
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, token=HF_API_TOKEN)
 if fine_tuned_model_folder:
@@ -162,12 +162,21 @@ def run_experiments_for_strategy(
             )
             table_name_generation_prompt = generate_and_tokenize_prompt(data_point)
 
+            database_tables = (
+                [
+                    match[6:-1]
+                    for match in re.findall(r"Table \S+", data_point["database_state"])
+                ]
+                if isinstance(data_point["database_state"], str)
+                else data_point["database_state"].keys()
+            )
+
             # Try 3 times. When no alternative name is found, skip this query.
             for i in range(3):
                 table_name = run_prompt(table_name_generation_prompt)
-                if table_name not in data_point["database_state"].keys():
+                if table_name not in database_tables:
                     break
-            if table_name in data_point["database_state"].keys():
+            if table_name in database_tables:
                 continue
 
             result_point["database_state"][table_name] = result_point[
