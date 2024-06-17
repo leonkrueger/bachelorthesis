@@ -28,6 +28,7 @@ evaluation_input_files = [
     "different_name_in_database",
 ]
 evaluation_folder = os.path.join("further_evaluation", "error_cases_missing_tables")
+different_name_already_generated = True
 
 # Depends on if the script is run in Docker or as plain python
 # evaluation_base_folder = os.path.join("/app", "evaluation")
@@ -51,7 +52,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_name, token=HF_API_TOKEN)
 if fine_tuned_model_folder:
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=True,
-        load_4bit_use_double_quant=True,
+        # load_4bit_use_double_quant=True,
         bnb_4bit_quant_type="nf4",
         bnb_4bit_compute_dtype=torch.bfloat16,
     )
@@ -153,7 +154,10 @@ def run_experiments_for_strategy(
 ) -> List[Dict[str, Any]]:
     result_points = []
     for data_point in tqdm(evaluation_input):
-        if evaluation_input_file == "different_name_in_database":
+        if (
+            not different_name_already_generated
+            and evaluation_input_file == "different_name_in_database"
+        ):
             # Get different table name first
             result_point = copy.deepcopy(data_point)
             data_point["query"] = (

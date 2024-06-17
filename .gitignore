@@ -170,3 +170,6 @@ wandb/
 
 # Test file
 bachelorthesis/test.py
+
+# GPT Cache
+openai_cache
