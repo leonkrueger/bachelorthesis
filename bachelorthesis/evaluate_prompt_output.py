@@ -184,7 +184,7 @@ def run_experiments_for_strategy(
                 continue
 
             if isinstance(result_point["database_state"], str):
-                result_point["database_state"].replace(
+                result_point["database_state"] = result_point["database_state"].replace(
                     f"Table {result_point['expected_table_name']}:",
                     f"Table {table_name}:",
                 )
