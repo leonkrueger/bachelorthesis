@@ -51,7 +51,7 @@ def generate_prompt(data_point):
 
 def generate_and_tokenize_prompt(data_point):
     full_prompt = generate_prompt(data_point)
-    return tokenizer.apply_chat_template(full_prompt, return_dict=True)
+    return tokenizer.apply_chat_template(full_prompt, truncation=True, return_dict=True)
 
 
 # def compute_metrics(predictions) -> dict[str, float]:
@@ -150,6 +150,8 @@ training_args = transformers.TrainingArguments(
     per_device_eval_batch_size=1,
     gradient_accumulation_steps=64,
     eval_accumulation_steps=8,
+    gradient_checkpointing=True,
+    optim="adamw_bnb_8bit",
     num_train_epochs=1,
     learning_rate=4e-4,
     fp16=True,
