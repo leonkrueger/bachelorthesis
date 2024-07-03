@@ -20,61 +20,53 @@ from transformers import (
 HF_API_TOKEN = "YOUR_HF_API_TOKEN"
 
 model_id = "meta-llama/Meta-Llama-3-8B-Instruct"
-train_input_file = "missing_tables_12000"
-validation_input_file = "missing_tables"
-output_dir = "missing_tables_12000_1"
-wandb_run_name = "12000_queries_1_epochs"
+train_input_file = "missing_columns_12000_csv"
+validation_input_file = "missing_columns_csv"
+output_dir = "missing_columns_12000_1_csv"
+wandb_run_name = "12000_queries_1_epochs_csv"
 
-os.environ["WANDB_PROJECT"] = "bachelorthesis_missing_tables"
+os.environ["WANDB_PROJECT"] = "bachelorthesis_missing_columns"
 wandb.login()
 wandb.init(name=wandb_run_name)
 # wandb.define_metric("eval/accuracy", summary="min")
 
 
 def generate_prompt(data_point):
+    # return [
+    #     {
+    #         "role": "system",
+    #         "content": "You are an intelligent database that predicts on which table a SQL-insert should be executed. "
+    #         "The inserts can contain abbreviated or synonymous names. The table and column names can be missing entirely. "
+    #         "Base your guess on the available information. "
+    #         "If there is a suitable table in the database answer its name. Else, predict a suitable name for a new database table. "
+    #         "Answer only with the name of the table. Don't give any explanation for your result.",
+    #     },
+    #     {
+    #         "role": "user",
+    #         "content": f"{data_point['Instruction']}\n" "Table:",
+    #     },
+    #     {"role": "assistant", "content": f"{data_point['Response'][7:]}"},
+    # ]
     return [
         {
             "role": "system",
-            "content": "You are an intelligent database that predicts on which table a SQL-insert should be executed. "
-            "The inserts can contain abbreviated or synonymous names. The table and column names can be missing entirely. "
+            "content": "You are an intelligent database that predicts the columns of a SQL-insert. "
+            "The inserts can contain abbreviated or synonymous column names. The column names can also be missing entirely. "
             "Base your guess on the available information. "
-            "If there is a suitable table in the database answer its name. Else, predict a suitable name for a new database table. "
-            "Answer only with the name of the table. Don't give any explanation for your result.",
+            "If there is a suitable column in the table answer its name. Else, predict a suitable name for a new column in this table. "
+            "Answer only with the name of the column. Don't give any explanation for your result.",
         },
         {
             "role": "user",
-            "content": f"{data_point['Instruction']}\n" "Table:",
+            "content": f"{data_point['Instruction']}\n" "Column:",
         },
-        {"role": "assistant", "content": f"{data_point['Response'][7:]}"},
+        {"role": "assistant", "content": f"{data_point['Response'][8:]}"},
     ]
 
 
 def generate_and_tokenize_prompt(data_point):
     full_prompt = generate_prompt(data_point)
     return tokenizer.apply_chat_template(full_prompt, truncation=True, return_dict=True)
-
-
-# def compute_metrics(predictions) -> dict[str, float]:
-#     preds, labels = predictions
-#     if isinstance(preds, tuple):
-#         preds = preds[0]
-#     decoded_preds = tokenizer.batch_decode(preds, skip_special_tokens=True)
-#     print(decoded_preds)
-
-#     accuracy = len([pred for pred, label in zip(preds, labels) if pred == label]) / len(
-#         preds
-#     )
-#     wandb.log({"eval/accuracy": accuracy})
-#     return {"accuracy": accuracy}
-
-
-# def preprocess_logits_for_metrics(logits, labels):
-#     """
-#     Original Trainer may have a memory leak.
-#     This is a workaround to avoid storing too many tensors that are not needed.
-#     """
-#     pred_ids = torch.argmax(logits[0], dim=-1)
-#     return pred_ids, labels
 
 
 # Load model and prepare for QLoRA
@@ -171,8 +163,6 @@ trainer = transformers.Trainer(
     model=model,
     train_dataset=train_dataset,
     eval_dataset=validation_dataset,
-    # compute_metrics=compute_metrics,
-    # preprocess_logits_for_metrics=preprocess_logits_for_metrics,
     args=training_args,
     data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False),
 )
