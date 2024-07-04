@@ -20,9 +20,8 @@ HF_API_TOKEN = "YOUR_HF_API_TOKEN"
 strategy_name = "missing_columns_12000_csv"
 fine_tuned_model_folder = "missing_columns_12000_1_csv"
 evaluation_input_files = [
-    "column_not_in_database",
-    "column_in_database",
-    "different_name_in_database",
+    "evaluation_data",
+    "evaluation_data_columns_deleted",
 ]
 evaluation_folder = os.path.join(
     "further_evaluation", "error_cases_missing_columns_csv"
@@ -96,18 +95,18 @@ def generate_prompt(data_point):
         {
             "role": "system",
             "content": "You are an intelligent database that predicts the columns of a SQL-insert. "
+            "Predict the column names for all values in the insert. Output the prediction in a csv format, separated with a semicolon. "
             "The inserts can contain abbreviated or synonymous column names. The column names can also be missing entirely. "
             "Base your guess on the available information. "
-            "If there is a suitable column in the table answer its name. Else, predict a suitable name for a new column in this table. "
-            "Answer only with the name of the column. Don't give any explanation for your result.",
+            "If there is a suitable column in the table use its name. Else, predict a suitable name for a new column in this table. "
+            "Don't give any explanation for your result.",
         },
         {
             "role": "user",
-            "content": "Predict the column for this value:\n"
-            f"Specified column: {data_point['specified_column']}\n"
-            f"Value: {data_point['value']}\n"
+            "content": "Predict the columns for this query:\n"
+            f"Query: {data_point['query']}\n"
             f"{data_point['table_state']}\n"
-            "Column:",
+            "Columns:",
         },
     ]
 
@@ -120,17 +119,25 @@ def generate_and_tokenize_prompt(data_point):
 
 
 def run_prompt(prompt) -> str:
-    return re.search(
-        r"(?P<column>\S+)",
-        pipe(
-            prompt,
-            max_new_tokens=max_new_tokens,
-            eos_token_id=terminators,
-            do_sample=True,
-            temperature=0.6,
-            top_p=0.9,
-        )[0]["generated_text"][len(prompt) :].strip(),
-    ).group("column")
+    # return re.search(
+    #     r"(?P<column>\S+)",
+    #     pipe(
+    #         prompt,
+    #         max_new_tokens=max_new_tokens,
+    #         eos_token_id=terminators,
+    #         do_sample=True,
+    #         temperature=0.6,
+    #         top_p=0.9,
+    #     )[0]["generated_text"][len(prompt) :].strip(),
+    # ).group("column")
+    return pipe(
+        prompt,
+        max_new_tokens=max_new_tokens,
+        eos_token_id=terminators,
+        do_sample=True,
+        temperature=0.6,
+        top_p=0.9,
+    )[0]["generated_text"][len(prompt) :].strip()
 
 
 def run_experiments_for_strategy(
@@ -140,7 +147,7 @@ def run_experiments_for_strategy(
     for data_point in tqdm(evaluation_input):
         # Run prompt directly
         prompt = generate_and_tokenize_prompt(data_point)
-        data_point["predicted_column_name"] = run_prompt(prompt)
+        data_point["predicted_column_names"] = run_prompt(prompt)
         result_points.append(data_point)
 
     return result_points
