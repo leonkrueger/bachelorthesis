@@ -6,6 +6,8 @@ from typing import Any, Dict, List
 
 import torch
 from peft import PeftModel
+from system.data.query_data import QueryData
+from system.insert_query_parser import parse_insert_query
 from tqdm import tqdm
 from transformers import (
     AutoModelForCausalLM,
@@ -24,7 +26,7 @@ evaluation_input_files = [
     "evaluation_data_columns_deleted",
 ]
 evaluation_folder = os.path.join(
-    "further_evaluation", "error_cases_missing_columns_csv"
+    "further_evaluation", "error_cases_missing_columns_combined_columns"
 )
 different_name_already_generated = True
 
@@ -44,7 +46,7 @@ errors_file = open(errors_file_path, "w", encoding="utf-8")
 
 # Create model
 model_name = "meta-llama/Meta-Llama-3-8B-Instruct"
-max_new_tokens = 30
+max_new_tokens = 300
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, token=HF_API_TOKEN)
 if fine_tuned_model_folder:
@@ -90,6 +92,30 @@ terminators = [
 ]
 
 
+def generate_prompt_for_single_column(data_point, value, column="No column specified"):
+    return [
+        {
+            "role": "system",
+            "content": "You are an intelligent database that predicts the columns of a SQL-insert. "
+            "The inserts can contain abbreviated or synonymous column names. The column names can also be missing entirely. "
+            "Base your guess on the available information. "
+            "If there is a suitable column in the table answer its name. Else, predict a suitable name for a new column in this table. "
+            "Answer only with the name of the column. Don't give any explanation for your result.",
+        },
+        {
+            "role": "user",
+            "content": (
+                "Predict the column for this value:\n"
+                f"Specified column: {column}\n"
+                f"Value: {value}\n"
+                f"{data_point['table_state']}\n"
+                "Column:",
+            ),
+        },
+        {"role": "assistant", "content": f"{data_point['Response'][8:]}"},
+    ]
+
+
 def generate_prompt(data_point):
     return [
         {
@@ -109,6 +135,13 @@ def generate_prompt(data_point):
             "Columns:",
         },
     ]
+
+
+def generate_and_tokenize_prompt_for_single_column(data_point, value, column):
+    full_prompt = generate_prompt_for_single_column(data_point, value, column)
+    return tokenizer.apply_chat_template(
+        full_prompt, tokenize=False, add_generation_prompt=True
+    )
 
 
 def generate_and_tokenize_prompt(data_point):
@@ -146,8 +179,23 @@ def run_experiments_for_strategy(
     result_points = []
     for data_point in tqdm(evaluation_input):
         # Run prompt directly
-        prompt = generate_and_tokenize_prompt(data_point)
-        data_point["predicted_column_names"] = run_prompt(prompt)
+        if fine_tuned_model_folder.endswith("combined_columns"):
+            prompt = generate_and_tokenize_prompt(data_point)
+            data_point["predicted_column_names"] = run_prompt(prompt)
+        else:
+            query_data = parse_insert_query(QueryData(data_point["query"], None))
+            if not query_data.columns:
+                query_data.columns = [None for i in range(len(query_data.values[0]))]
+            data_point["predicted_column_names"] = ";".join(
+                [
+                    run_prompt(
+                        generate_and_tokenize_prompt_for_single_column(
+                            data_point, value, column
+                        )
+                    )
+                    for value, column in zip(query_data.values[0], query_data.columns)
+                ]
+            )
         result_points.append(data_point)
 
     return result_points
