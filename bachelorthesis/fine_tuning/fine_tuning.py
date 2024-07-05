@@ -20,10 +20,10 @@ from transformers import (
 HF_API_TOKEN = "YOUR_HF_API_TOKEN"
 
 model_id = "meta-llama/Meta-Llama-3-8B-Instruct"
-train_input_file = "missing_columns_12000_combined_columns"
-validation_input_file = "missing_columns_combined_columns"
-output_dir = "missing_columns_12000_1_combined_columns"
-wandb_run_name = "12000_queries_1_epochs_combined_columns"
+train_input_file = "missing_columns_12000_combined_columns_2"
+validation_input_file = "missing_columns_combined_columns_2"
+output_dir = "missing_columns_12000_1_combined_columns_2"
+wandb_run_name = "12000_queries_1_epochs_combined_columns_2"
 
 os.environ["WANDB_PROJECT"] = "bachelorthesis_missing_columns"
 wandb.login()
@@ -66,7 +66,7 @@ def generate_prompt(data_point):
         {
             "role": "system",
             "content": "You are an intelligent database that predicts the columns of a SQL-insert. "
-            "Predict the column names for all values in the insert. Output the prediction in a csv format, separated with a semicolon. "
+            "Predict the column name for each value in the insert. "
             "The inserts can contain abbreviated or synonymous column names. The column names can also be missing entirely. "
             "Base your guess on the available information. "
             "If there is a suitable column in the table use its name. Else, predict a suitable name for a new column in this table. "
