@@ -19,8 +19,8 @@ from transformers import (
 HF_API_TOKEN = "YOUR_HF_API_TOKEN"
 
 # Switch if necessary
-strategy_name = "missing_columns_12000_csv"
-fine_tuned_model_folder = "missing_columns_12000_1_csv"
+strategy_name = "missing_columns_12000_combined_columns_2"
+fine_tuned_model_folder = "missing_columns_12000_1_combined_columns_2"
 evaluation_input_files = [
     "evaluation_data",
     "evaluation_data_columns_deleted",
@@ -112,7 +112,6 @@ def generate_prompt_for_single_column(data_point, value, column="No column speci
                 "Column:",
             ),
         },
-        {"role": "assistant", "content": f"{data_point['Response'][8:]}"},
     ]
 
 
@@ -121,7 +120,7 @@ def generate_prompt(data_point):
         {
             "role": "system",
             "content": "You are an intelligent database that predicts the columns of a SQL-insert. "
-            "Predict the column names for all values in the insert. Output the prediction in a csv format, separated with a semicolon. "
+            "Predict the column name for each value in the insert. "
             "The inserts can contain abbreviated or synonymous column names. The column names can also be missing entirely. "
             "Base your guess on the available information. "
             "If there is a suitable column in the table use its name. Else, predict a suitable name for a new column in this table. "
