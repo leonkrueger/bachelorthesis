@@ -15,8 +15,9 @@ from transformers import (
     BitsAndBytesConfig,
     pipeline,
 )
+from utils import load_env_variables
 
-HF_API_TOKEN = "YOUR_HF_API_TOKEN"
+load_env_variables()
 
 # Switch if necessary
 strategy_name = "missing_columns_12000_combined_columns_2"
@@ -48,7 +49,9 @@ errors_file = open(errors_file_path, "w", encoding="utf-8")
 model_name = "meta-llama/Meta-Llama-3-8B-Instruct"
 max_new_tokens = 300
 
-tokenizer = AutoTokenizer.from_pretrained(model_name, token=HF_API_TOKEN)
+tokenizer = AutoTokenizer.from_pretrained(
+    model_name, token=os.environ["OPENAI_API_KEY"]
+)
 if fine_tuned_model_folder:
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=True,
@@ -57,7 +60,7 @@ if fine_tuned_model_folder:
     )
     base_model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        token=HF_API_TOKEN,
+        token=os.environ["OPENAI_API_KEY"],
         quantization_config=bnb_config,
         device_map="auto",
     )
@@ -74,7 +77,7 @@ if fine_tuned_model_folder:
 else:
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        token=HF_API_TOKEN,
+        token=os.environ["OPENAI_API_KEY"],
         torch_dtype=torch.bfloat16,
         device_map="auto",
     )
@@ -178,7 +181,7 @@ def run_experiments_for_strategy(
     result_points = []
     for data_point in tqdm(evaluation_input):
         # Run prompt directly
-        if fine_tuned_model_folder.endswith("combined_columns"):
+        if "combined_columns" in fine_tuned_model_folder:
             prompt = generate_and_tokenize_prompt(data_point)
             data_point["predicted_column_names"] = run_prompt(prompt)
         else:

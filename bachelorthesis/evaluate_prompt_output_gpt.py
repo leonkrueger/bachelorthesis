@@ -6,8 +6,9 @@ from typing import Any, Dict, List
 
 from system.strategies.openai.openai import openai_execute
 from tqdm import tqdm
+from utils import load_env_variables
 
-# HF_API_TOKEN = "YOUR_HF_API_TOKEN"
+load_env_variables()
 
 # Switch if necessary
 model = "gpt-3.5-turbo-0125"
@@ -17,10 +18,6 @@ evaluation_input_files = [
     "different_name_in_database",
 ]
 evaluation_folder = os.path.join("further_evaluation", "performance_gpt_tables_deleted")
-
-os.environ["OPENAI_API_KEY"] = (
-    "YOUR_OPENAI_API_KEY"
-)
 
 # Depends on if the script is run in Docker or as plain python
 # evaluation_base_folder = os.path.join("/app", "evaluation")

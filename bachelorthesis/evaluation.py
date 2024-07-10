@@ -9,17 +9,17 @@ from system.strategies.heuristic.name_predictor import NamePredictor
 from system.strategies.llama3.llama3_model import Llama3Model, Llama3ModelType
 from system.strategies.openai.openai_model import OpenAIModel
 from system.table_manager import TableManager
+from utils import load_env_variables
+
+load_env_variables()
 
 database = PythonDatabase()
 table_manager = TableManager(database)
-
-HF_API_TOKEN = "YOUR_HF_API_TOKEN"
 
 strategies = {
     "Llama3_finetuned": None,
     "Llama3": None,  # Llama3Model(
     #     Llama3ModelType.NON_FINE_TUNED_LOCAL,
-    #     huggingface_api_token=HF_API_TOKEN,
     # ),
     "GPT4": None,  # OpenAIModel(os.getenv("OPENAI_API_KEY"), os.getenv("OPENAI_ORG_ID")),
     "Heuristics": None,  # HeuristicStrategy(NamePredictor(HF_API_TOKEN)),
@@ -33,7 +33,7 @@ strategies = {
     #     ),
     # ),
     "missing_tables_0": Llama3Model(
-        Llama3ModelType.NON_FINE_TUNED, huggingface_api_token=HF_API_TOKEN
+        Llama3ModelType.NON_FINE_TUNED,
     ),
 }
 

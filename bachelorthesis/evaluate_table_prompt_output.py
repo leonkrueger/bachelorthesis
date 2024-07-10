@@ -13,11 +13,9 @@ from transformers import (
     BitsAndBytesConfig,
     pipeline,
 )
+from utils import load_env_variables
 
-# database = PythonDatabase()
-# table_manager = TableManager(database)
-
-HF_API_TOKEN = "YOUR_HF_API_TOKEN"
+load_env_variables()
 
 # Switch if necessary
 strategy_name = "missing_tables_1500"
@@ -48,7 +46,9 @@ errors_file = open(errors_file_path, "w", encoding="utf-8")
 model_name = "meta-llama/Meta-Llama-3-8B-Instruct"
 max_new_tokens = 30
 
-tokenizer = AutoTokenizer.from_pretrained(model_name, token=HF_API_TOKEN)
+tokenizer = AutoTokenizer.from_pretrained(
+    model_name, token=os.environ["OPENAI_API_KEY"]
+)
 if fine_tuned_model_folder:
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=True,
@@ -58,7 +58,7 @@ if fine_tuned_model_folder:
     )
     base_model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        token=HF_API_TOKEN,
+        token=os.environ["OPENAI_API_KEY"],
         quantization_config=bnb_config,
         device_map="auto",
     )
@@ -75,7 +75,7 @@ if fine_tuned_model_folder:
 else:
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        token=HF_API_TOKEN,
+        token=os.environ["OPENAI_API_KEY"],
         torch_dtype=torch.bfloat16,
         device_map="auto",
     )

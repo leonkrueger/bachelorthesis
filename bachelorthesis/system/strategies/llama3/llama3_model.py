@@ -1,3 +1,4 @@
+import os
 import re
 import time
 from enum import Enum
@@ -27,32 +28,30 @@ class Llama3Model(Strategy):
         self,
         model_type: Llama3ModelType = Llama3ModelType.NON_FINE_TUNED,
         fine_tuned_model_dir: str = None,
-        huggingface_api_token: str = None,
     ) -> None:
         self.model_name = "meta-llama/Meta-Llama-3-8B-Instruct"
         self.model_type = model_type
         self.max_new_tokens = 30
 
         tokenizer = AutoTokenizer.from_pretrained(
-            self.model_name, token=huggingface_api_token
+            self.model_name, token=os.environ["OPENAI_API_KEY"]
         )
         if model_type == Llama3ModelType.NON_FINE_TUNED:
             model = AutoModelForCausalLM.from_pretrained(
                 self.model_name,
-                token=huggingface_api_token,
+                token=os.environ["OPENAI_API_KEY"],
                 torch_dtype=torch.bfloat16,
                 device_map="auto",
             )
         else:
             bnb_config = BitsAndBytesConfig(
                 load_in_4bit=True,
-                # load_4bit_use_double_quant=True,
                 bnb_4bit_quant_type="nf4",
                 bnb_4bit_compute_dtype=torch.bfloat16,
             )
             base_model = AutoModelForCausalLM.from_pretrained(
                 self.model_name,
-                token=huggingface_api_token,
+                token=os.environ["OPENAI_API_KEY"],
                 quantization_config=bnb_config,
                 device_map="auto",
             )

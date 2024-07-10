@@ -10,16 +10,16 @@ from system.strategies.llama3.llama3_model import Llama3Model, Llama3ModelType
 from system.strategies.openai.openai_model import OpenAIModel
 from system.table_manager import TableManager
 from tabulate import tabulate
+from utils import load_env_variables
+
+load_env_variables()
 
 database = PythonDatabase()
 table_manager = TableManager(database)
 
 # strategy = HeuristicStrategy(NamePredictor(os.getenv("HF_API_TOKEN")))
 # strategy = OpenAIModel(os.getenv("OPENAI_API_KEY"), os.getenv("OPENAI_ORG_ID"))
-strategy = Llama3Model(
-    Llama3ModelType.NON_FINE_TUNED,
-    huggingface_api_token="YOUR_HF_API_TOKEN",
-)
+strategy = Llama3Model(Llama3ModelType.NON_FINE_TUNED)
 
 insert_query_handler = InsertQueryHandler(database, table_manager, strategy)
 
