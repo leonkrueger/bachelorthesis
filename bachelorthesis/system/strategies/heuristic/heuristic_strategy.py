@@ -14,10 +14,10 @@ class HeuristicStrategy(Strategy):
     # First value is the name of the table, second the column mapping
     predictions = None
 
-    def __init__(self, name_predictor: NamePredictor) -> None:
+    def __init__(self) -> None:
         super().__init__()
 
-        self.name_predictor = name_predictor
+        self.name_predictor = NamePredictor()
 
     def predict_table_name(self, query_data: QueryData) -> str:
         if self.predictions is None:

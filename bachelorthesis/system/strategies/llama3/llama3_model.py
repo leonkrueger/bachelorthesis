@@ -34,12 +34,12 @@ class Llama3Model(Strategy):
         self.max_new_tokens = 30
 
         tokenizer = AutoTokenizer.from_pretrained(
-            self.model_name, token=os.environ["OPENAI_API_KEY"]
+            self.model_name, token=os.environ["HF_API_TOKEN"]
         )
         if model_type == Llama3ModelType.NON_FINE_TUNED:
             model = AutoModelForCausalLM.from_pretrained(
                 self.model_name,
-                token=os.environ["OPENAI_API_KEY"],
+                token=os.environ["HF_API_TOKEN"],
                 torch_dtype=torch.bfloat16,
                 device_map="auto",
             )
@@ -51,7 +51,7 @@ class Llama3Model(Strategy):
             )
             base_model = AutoModelForCausalLM.from_pretrained(
                 self.model_name,
-                token=os.environ["OPENAI_API_KEY"],
+                token=os.environ["HF_API_TOKEN"],
                 quantization_config=bnb_config,
                 device_map="auto",
             )

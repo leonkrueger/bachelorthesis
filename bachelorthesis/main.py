@@ -17,7 +17,7 @@ load_env_variables()
 database = PythonDatabase()
 table_manager = TableManager(database)
 
-# strategy = HeuristicStrategy(NamePredictor(os.getenv("HF_API_TOKEN")))
+# strategy = HeuristicStrategy()
 # strategy = OpenAIModel(os.getenv("OPENAI_API_KEY"), os.getenv("OPENAI_ORG_ID"))
 strategy = Llama3Model(Llama3ModelType.NON_FINE_TUNED)
 

@@ -1,3 +1,4 @@
+import os
 import re
 import time
 from enum import Enum
@@ -27,21 +28,20 @@ class LLama2Model(Strategy):
         self,
         model_type: LLama2ModelType = LLama2ModelType.NON_FINE_TUNED_LOCAL,
         fine_tuned_model_dir: str = None,
-        huggingface_api_token: str = None,
     ) -> None:
         self.model_name = "meta-llama/Llama-2-7b-hf"
         self.model_type = model_type
         self.max_new_tokens = 10
 
         if model_type == LLama2ModelType.NON_FINE_TUNED_API:
-            self.client = InferenceClient(token=huggingface_api_token, timeout=300)
+            self.client = InferenceClient(token=os.environ["HF_API_TOKEN"], timeout=300)
         else:
             tokenizer = AutoTokenizer.from_pretrained(
-                self.model_name, token=huggingface_api_token
+                self.model_name, token=os.environ["HF_API_TOKEN"]
             )
             if model_type == LLama2ModelType.NON_FINE_TUNED_LOCAL:
                 model = AutoModelForCausalLM.from_pretrained(
-                    self.model_name, token=huggingface_api_token, device_map="auto"
+                    self.model_name, token=os.environ["HF_API_TOKEN"], device_map="auto"
                 )
             else:
                 bnb_config = BitsAndBytesConfig(
@@ -52,7 +52,7 @@ class LLama2Model(Strategy):
                 )
                 base_model = AutoModelForCausalLM.from_pretrained(
                     self.model_name,
-                    token=huggingface_api_token,
+                    token=os.environ["HF_API_TOKEN"],
                     quantization_config=bnb_config,
                     device_map="auto",
                 )

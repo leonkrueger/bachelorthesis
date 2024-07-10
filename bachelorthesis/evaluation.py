@@ -22,7 +22,7 @@ strategies = {
     #     Llama3ModelType.NON_FINE_TUNED_LOCAL,
     # ),
     "GPT4": None,  # OpenAIModel(os.getenv("OPENAI_API_KEY"), os.getenv("OPENAI_ORG_ID")),
-    "Heuristics": None,  # HeuristicStrategy(NamePredictor(HF_API_TOKEN)),
+    "Heuristics": None,  # HeuristicStrategy(),
     "missing_tables_300": None,  # Llama3Model(
     #     Llama3ModelType.FINE_TUNED,
     #     os.path.join(

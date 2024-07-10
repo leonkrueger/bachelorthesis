@@ -46,9 +46,7 @@ errors_file = open(errors_file_path, "w", encoding="utf-8")
 model_name = "meta-llama/Meta-Llama-3-8B-Instruct"
 max_new_tokens = 30
 
-tokenizer = AutoTokenizer.from_pretrained(
-    model_name, token=os.environ["OPENAI_API_KEY"]
-)
+tokenizer = AutoTokenizer.from_pretrained(model_name, token=os.environ["HF_API_TOKEN"])
 if fine_tuned_model_folder:
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=True,
@@ -58,7 +56,7 @@ if fine_tuned_model_folder:
     )
     base_model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        token=os.environ["OPENAI_API_KEY"],
+        token=os.environ["HF_API_TOKEN"],
         quantization_config=bnb_config,
         device_map="auto",
     )
@@ -75,7 +73,7 @@ if fine_tuned_model_folder:
 else:
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        token=os.environ["OPENAI_API_KEY"],
+        token=os.environ["HF_API_TOKEN"],
         torch_dtype=torch.bfloat16,
         device_map="auto",
     )
