@@ -6,14 +6,16 @@ from collections import defaultdict
 import torch
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+from utils import load_env_variables
 
-HF_API_TOKEN = "YOUR_HF_API_TOKEN"
+load_env_variables()
+
 model_name = "meta-llama/Meta-Llama-3-8B-Instruct"
 
-tokenizer = AutoTokenizer.from_pretrained(model_name, token=HF_API_TOKEN)
+tokenizer = AutoTokenizer.from_pretrained(model_name, token=os.environ["HF_API_TOKEN"])
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
-    token=HF_API_TOKEN,
+    token=os.environ["HF_API_TOKEN"],
     torch_dtype=torch.bfloat16,
     device_map="auto",
 )
@@ -57,34 +59,31 @@ def generate_synonyms(data_point: dict[str, str], synonyms) -> None:
     if len(data_point["query"]) == 0:
         return
 
-    for column in data_point["column_names"]:
-        messages = [
-            {
-                "role": "system",
-                "content": "Given three SQL insert query, you should predict a different name for the specified database column. "
-                "Answer only with the different name of the column. Don't give any explanation for your result.",
-            },
-            {
-                "role": "user",
-                "content": f"Predict a different name for the database column '{column}' for these insert queries.\n"
-                f"Query: {''.join(data_point['query'])}\n"
-                "Table:",
-            },
-        ]
+    messages = [
+        {
+            "role": "system",
+            "content": "Given a SQL insert query, you should predict a different name for a database table that is suitable to the information of the query. "
+            "Answer only with the predicted name of the table. Don't give any explanation for your result.",
+        },
+        {
+            "role": "user",
+            "content": "Predict a different name of a database table for this insert query.\n"
+            f"Query: {''.join(data_point['query'])}\n"
+            "Table:",
+        },
+    ]
 
-        for i in range(3):
-            predicted_name = remove_quotes(run_prompt(messages))
+    for i in range(3):
+        predicted_name = remove_quotes(run_prompt(messages))
 
-            if (
-                predicted_name != column
-                and predicted_name
-                not in synonyms[data_point["database_name"]][data_point["table_name"]][
-                    column
-                ]
-            ):
-                synonyms[data_point["database_name"]][data_point["table_name"]][
-                    column
-                ].append(predicted_name)
+        if (
+            predicted_name != data_point["table_name"]
+            and predicted_name
+            not in synonyms[data_point["database_name"]][data_point["table_name"]]
+        ):
+            synonyms[data_point["database_name"]][data_point["table_name"]].append(
+                predicted_name
+            )
 
 
 with open(
@@ -92,17 +91,16 @@ with open(
         os.path.dirname(os.path.realpath(__file__)),
         "..",
         "..",
-        "..",
         "evaluation",
         "bachelorthesis",
         "fine_tuning",
-        "column_synonym_generation_data.json",
+        "synonym_generation_data.json",
     ),
     encoding="utf-8",
 ) as synonym_generation_data_file:
     synonym_generation_data = json.load(synonym_generation_data_file)
 
-synonyms = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: [])))
+synonyms = defaultdict(lambda: defaultdict(lambda: []))
 
 for data_point in tqdm(synonym_generation_data):
     generate_synonyms(data_point, synonyms)
@@ -112,11 +110,10 @@ with open(
         os.path.dirname(os.path.realpath(__file__)),
         "..",
         "..",
-        "..",
         "evaluation",
         "bachelorthesis",
         "fine_tuning",
-        "column_synonyms.json",
+        "synonyms.json",
     ),
     mode="w",
     encoding="utf-8",

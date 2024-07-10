@@ -16,8 +16,9 @@ from transformers import (
     AutoTokenizer,
     BitsAndBytesConfig,
 )
+from utils import load_env_variables
 
-HF_API_TOKEN = "YOUR_HF_API_TOKEN"
+load_env_variables()
 
 model_id = "meta-llama/Meta-Llama-3-8B-Instruct"
 train_input_file = "missing_columns_12000_combined_columns_2"
@@ -28,7 +29,6 @@ wandb_run_name = "12000_queries_1_epochs_combined_columns_2"
 os.environ["WANDB_PROJECT"] = "bachelorthesis_missing_columns"
 wandb.login()
 wandb.init(name=wandb_run_name)
-# wandb.define_metric("eval/accuracy", summary="min")
 
 
 def generate_prompt(data_point):
@@ -97,12 +97,12 @@ model = AutoModelForCausalLM.from_pretrained(
     device_map="auto",
     trust_remote_code=True,
     quantization_config=bnb_config,
-    token=HF_API_TOKEN,
+    token=os.environ["HF_API_TOKEN"],
 )
 model = prepare_model_for_kbit_training(model)
 
 # Load tokenizer
-tokenizer = AutoTokenizer.from_pretrained(model_id, token=HF_API_TOKEN)
+tokenizer = AutoTokenizer.from_pretrained(model_id, token=os.environ["HF_API_TOKEN"])
 tokenizer.pad_token = tokenizer.eos_token
 
 # Configure LoRA
@@ -120,7 +120,6 @@ train_dataset_name = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     "..",
     "..",
-    "..",
     "evaluation",
     "bachelorthesis",
     "fine_tuning",
@@ -135,7 +134,6 @@ validation_dataset_name = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     "..",
     "..",
-    "..",
     "evaluation",
     "bachelorthesis",
     "fine_tuning",
@@ -148,7 +146,7 @@ validation_dataset = load_dataset(
 validation_dataset = validation_dataset.shuffle().map(generate_and_tokenize_prompt)
 
 output_dir = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)), "output", output_dir
+    os.path.dirname(os.path.realpath(__file__)), "fine_tuning", "output", output_dir
 )
 os.makedirs(output_dir, exist_ok=True)
 
@@ -168,7 +166,7 @@ training_args = transformers.TrainingArguments(
     eval_steps=10,
     save_strategy="no",
     output_dir=os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), "output", "steps"
+        os.path.dirname(os.path.realpath(__file__)), "fine_tuning", "output", "steps"
     ),
     report_to="wandb",
     run_name=wandb_run_name,
