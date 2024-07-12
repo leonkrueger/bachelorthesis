@@ -1,16 +1,12 @@
 import re
-from typing import Dict, List
+from typing import Any, Dict
 
 from ...data.query_data import QueryData
 from ..strategy import Strategy
-from .openai import (
-    _openai_compute_approximate_max_cost,
-    _openai_execute_request,
-    openai_execute,
-)
+from .openai import _openai_compute_approximate_max_cost, _openai_execute_request
 
 
-class OpenAIModel(Strategy):
+class OpenAIStrategy(Strategy):
     def __init__(
         self,
         model: str = "gpt-3.5-turbo-0125",
@@ -18,7 +14,7 @@ class OpenAIModel(Strategy):
         self.model = model
         self.max_tokens = 30
 
-    def generate_request(self, query_data: QueryData) -> List[Dict[str]]:
+    def generate_request(self, query_data: QueryData) -> Dict[str, Any]:
         database_string = (
             "\n".join(
                 [

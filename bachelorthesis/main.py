@@ -7,7 +7,7 @@ from system.insert_query_handler import InsertQueryHandler
 from system.strategies.heuristic.heuristic_strategy import HeuristicStrategy
 from system.strategies.heuristic.name_predictor import NamePredictor
 from system.strategies.llama3.llama3_model import Llama3Model, Llama3ModelType
-from system.strategies.openai.openai_model import OpenAIModel
+from system.strategies.openai.openai_strategy import OpenAIStrategy
 from system.table_manager import TableManager
 from tabulate import tabulate
 from utils import load_env_variables
