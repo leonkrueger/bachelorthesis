@@ -9,3 +9,5 @@ peft
 bitsandbytes
 datasets
 wandb
+nltk
+thefuzz

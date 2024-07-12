@@ -8,51 +8,91 @@ from langchain.prompts import PromptTemplate
 from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
+from ...data.query_data import QueryData
+
 
 class NamePredictor:
     def __init__(self) -> None:
-        self.model_name = "mistralai/Mistral-7B-Instruct-v0.1"
-        self.max_new_tokens = 1
+        self.model_name = "meta-llama/Meta-Llama-3-8B-Instruct"
+        self.max_new_tokens = 10
 
         tokenizer = AutoTokenizer.from_pretrained(
             self.model_name, token=os.environ["HF_API_TOKEN"]
         )
         model = AutoModelForCausalLM.from_pretrained(
-            self.model_name, token=os.environ["HF_API_TOKEN"], device_map="auto"
+            self.model_name,
+            token=os.environ["HF_API_TOKEN"],
+            torch_dtype=torch.bfloat16,
+            device_map="auto",
         )
-
-        tokenizer.pad_token = tokenizer.unk_token
-        model.config.pad_token_id = tokenizer.pad_token_id
-        pipe = pipeline(
+        tokenizer.pad_token = tokenizer.eos_token
+        self.pipe = pipeline(
             "text-generation",
             model=model,
             tokenizer=tokenizer,
             device_map="auto",
-            do_sample=True,
-            max_new_tokens=self.max_new_tokens,
-            top_k=5,
-            num_return_sequences=1,
-            eos_token_id=tokenizer.eos_token_id,
-            pad_token_id=tokenizer.pad_token_id,
         )
-        self.llm = HuggingFacePipeline(pipeline=pipe)
 
-    def predict_table_name(self, columns: List[str]) -> str:
-        prompt_text = """[INST]Given the column names in a database, predict a suitable name for the table that likely represents the data described by these columns.
+    def run_prompt(self, messages: list[dict[str, str]]) -> str:
+        """Runs a prompt on a Llama2 model and returns its answer"""
+        prompt = self.pipe.tokenizer.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
+        )
 
-        Column names: language_id, language_code, language_name
-        Table name:[/INST] language
+        terminators = [
+            self.pipe.tokenizer.eos_token_id,
+            self.pipe.tokenizer.convert_tokens_to_ids("<|eot_id|>"),
+        ]
 
-        [Inst]Column names: ID, Name, CountryCode, District, Population
-        Table name:[/INST] City
-        
-        [Inst]Column names: {columns}
-        Table name:[/INST]"""
-        joined_columns = ", ".join(columns)
+        return self.pipe(
+            prompt,
+            max_new_tokens=10,
+            eos_token_id=terminators,
+            do_sample=True,
+            temperature=0.6,
+            top_p=0.9,
+        )[0]["generated_text"][len(prompt) :].strip()
 
-        prompt = PromptTemplate(template=prompt_text, input_variables=["columns"])
-        llm_chain = LLMChain(prompt=prompt, llm=self.llm)
-        args = {"columns": joined_columns}
-        return llm_chain.invoke(joined_columns)["text"][
-            len(prompt_text.replace("{columns}", joined_columns)) :
-        ].strip()
+    def remove_quotes(name: str) -> str:
+        """Removes the quotes from a name, if it has any"""
+        if name.startswith("'") or name.startswith('"'):
+            return name[1:-1]
+        return name
+
+    def predict_table_name(self, query_data: QueryData) -> str:
+        """Predicts a suitable table name for an insertion query"""
+        messages = [
+            {
+                "role": "system",
+                "content": "Given a SQL insert query, you should predict a name for a database table that is suitable to the information of the query. "
+                "Answer only with the predicted name of the table. Don't give any explanation for your result.",
+            },
+            {
+                "role": "user",
+                "content": "Predict a name for a database table for this insert query.\n"
+                f"Query: {''.join(query_data.query)}\n"
+                "Table:",
+            },
+        ]
+
+        return self.remove_quotes(self.run_prompt(messages))
+
+    def predict_column_name(self, query_data: QueryData, value: str) -> str:
+        """Predicts a suitable column name for a specific value of a query"""
+        messages = [
+            {
+                "role": "system",
+                "content": "Given a SQL insert query and a specific value, you should predict a name for a database column "
+                "that is suitable to store the specified value of the query. "
+                "Answer only with the predicted name of the column. Don't give any explanation for your result.",
+            },
+            {
+                "role": "user",
+                "content": "Predict a name for a database column for this value.\n"
+                f"Query: {''.join(query_data.query)}\n"
+                f"Value: {value}"
+                "Column:",
+            },
+        ]
+
+        return self.remove_quotes(self.run_prompt(messages))

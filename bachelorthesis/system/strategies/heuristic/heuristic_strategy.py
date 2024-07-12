@@ -1,189 +1,173 @@
 from typing import Any, Dict, List, Tuple
 
+from thefuzz import fuzz, process
+
 from ...data.query_data import QueryData
 from ...data.table_origin import TableOrigin
 from ..strategy import Strategy
 from .name_predictor import NamePredictor
+from .synonym_generator import SynonymGenerator
 
 
 class HeuristicStrategy(Strategy):
-    MINIMAL_COLUMNS_FOUND_RATIO_RELAXED = 0.4
-    MINIMAL_COLUMNS_FOUND_RATIO_STRICT = 0.7
+    MINIMAL_FUZZY_SIMILARITY = 60
+    MINIMAL_COLUMNS_FOUND_RATIO = 0.5
 
     # Is filled when the table name is predicted and resetted after the last prediction step for a query
-    # First value is the name of the table, second the column mapping
-    predictions = None
+    # First value is the name of the table, second is the column mapping
+    saved_column_mapping: Tuple[str, Dict[str, str]] = None
 
-    def __init__(self) -> None:
+    def __init__(self, synonym_generator: SynonymGenerator) -> None:
         super().__init__()
 
         self.name_predictor = NamePredictor()
+        self.synonym_generator = synonym_generator
 
     def predict_table_name(self, query_data: QueryData) -> str:
-        if self.predictions is None:
-            self.predictions = self.map_table_to_database(query_data)
+        if query_data.table:
+            # Generate synonyms for the specified table name
+            synonyms = self.synonym_generator.get_synonyms(query_data.table)
 
-        # TODO: Remove following two lines and change third
-        table_name = self.predictions[0]
-        self.predictions = None
-        return table_name
+            best_score = 0
+            best_table = None
+
+            # Find a table in the database whose name is close to any found synonym
+            for table in query_data.database_state.keys():
+                match, score = process.extract(
+                    table, synonyms, scorer=fuzz.ratio, limit=1
+                )[0]
+
+                if score >= self.MINIMAL_FUZZY_SIMILARITY and score > best_score:
+                    best_score = score
+                    best_table = table
+
+            if best_table:
+                return best_table
+        else:
+            # Use the table with the best column mapping if the table was not specified.
+            # Only use it, if at least 50% of the columns were mapped to a column of the table.
+            table, column_mapping, column_found_ratio = (
+                self.get_column_mapping_for_best_table(query_data)
+            )
+            if column_found_ratio >= self.MINIMAL_COLUMNS_FOUND_RATIO:
+                return table
+
+        # If no match was found, predict a new table name
+        return self.name_predictor.predict_table_name(query_data)
 
     def predict_column_mapping(self, query_data: QueryData) -> Dict[str, str]:
-        column_mapping = self.predictions[1]
-        self.predictions = None
+        # If we already computed the table mapping in the table name prediction step, we use this
+        if (
+            self.saved_column_mapping
+            and self.saved_column_mapping[0] == query_data.table
+        ):
+            return self.saved_column_mapping[1]
+        # Otherwise we reset the variable
+        self.saved_column_mapping = None
+
+        # If the columns were not specified in the query, predict new ones based on the values
+        if query_data.columns:
+            query_columns = query_data.columns
+        else:
+            query_columns = [
+                self.name_predictor.predict_column_name(query_data, value)
+                for value in query_data.values[0]
+            ]
+
+        # If the table exists use its columns for the prediction
+        # Else use an empty list as there are no columns in the table yet
+        database_columns = (
+            query_data.database_state[query_data.table]
+            if query_data.table in query_data.database_state.keys()
+            else []
+        )
+        # Compute the column mapping
+        table, column_mapping, column_found_ratio = self.get_column_mapping_for_table(
+            query_columns, database_columns
+        )
+        # Include not mapped columns so that they can be added to the table
+        for column in query_columns:
+            if column not in column_mapping.keys():
+                column_mapping[column] = column
+
         return column_mapping
 
-    def map_table_to_database(
-        self,
-        query_data: QueryData,
-    ) -> Tuple[str, Dict[str, str], bool]:
-        """Find the database table that fits the specified arguments in the query best.
-        If there is no table found, the table specified in the query is returned.
-        The second returned value is a mapping of the columns in the query to the columns in the table.
-        The third returned value signals, if the table needs to be created."""
-        if query_data.table is not None:
-            # Table name specified in the query
-            fitting_db_tables = self.get_fitting_tables(
-                query_data.database_state.keys(), query_data.table
-            )
-
-            if len(fitting_db_tables) == 0:
-                # There is no table that fits the specified name
-                table_data = self.map_table_to_database_on_columns(
-                    query_data, query_data.database_state
-                )
-
-                if (
-                    table_data["columns_found_ratio"]
-                    >= self.MINIMAL_COLUMNS_FOUND_RATIO_STRICT
-                ):
-                    # Use the found table despite having a non-fitting name if the columns fit really well
-                    return (table_data["table"], table_data["column_mapping"])
-                else:
-                    # Create a new table else
-                    query_data.table_origin = TableOrigin.USER
-                    return (query_data.table, {})
-            else:
-                # There is at least one table that fit the specified name
-                table_data = self.map_table_to_database_on_columns(
-                    query_data,
-                    {
-                        table: columns
-                        for table, columns in query_data.database_state.items()
-                        if table in fitting_db_tables
-                    },
-                )
-
-                # Use the table, with the best fitting columns
-                return (table_data["table"], table_data["column_mapping"])
-
-                # if table_data[
-                #     "columns_found_ratio"
-                # ] >= self.MINIMAL_COLUMNS_FOUND_RATIO_RELAXED:
-                #     # Use the found table if columns fit as well
-                #     return (
-                #         table_data["table"],
-                #         table_data["column_mapping"],
-                #         False,
-                #     )
-                # else:
-                #     # Create a new table
-                #     query_data.table_origin = TableOrigin.USER
-                #     return (query_data.table, {}, True)
-
+    def get_column_mapping_for_best_table(
+        self, query_data: QueryData
+    ) -> Tuple[str, Dict[str, str]]:
+        """Computes the table with the best ratio of mapped columns.
+        Returns the name of the table, the column mapping and the ratio of mapped columns.
+        """
+        # If the columns were not specified in the query, predict new ones based on the values
+        if query_data.columns:
+            query_columns = query_data.columns
         else:
-            # No table name specified in the query
-            table_data = self.map_table_to_database_on_columns(
-                query_data, query_data.database_state
+            query_columns = [
+                self.name_predictor.predict_column_name(query_data, value)
+                for value in query_data.values[0]
+            ]
+
+        best_column_found_ratio = 0.0
+        best_table = None
+        best_column_mapping = None
+
+        # Computes the table with the best ratio of mapped columns
+        for table, columns in query_data.database_state.items():
+            column_mapping_for_table = self.get_column_mapping_for_table(
+                query_columns, columns
             )
-
             if (
-                table_data["columns_found_ratio"]
-                >= self.MINIMAL_COLUMNS_FOUND_RATIO_RELAXED
-            ):
-                # Columns fit to a table in the database
-                return (table_data["table"], table_data["column_mapping"])
-            else:
-                # Columns do not fit a table in the database
-                predicted_table_name = self.name_predictor.predict_table_name(
-                    query_data.columns
-                )
-                query_data.table_origin = TableOrigin.PREDICTION
-                return (predicted_table_name, {})
+                ratio := len(column_mapping_for_table) / len(query_columns)
+            ) > best_column_found_ratio:
+                best_column_found_ratio = ratio
+                best_table = table
+                best_column_mapping = column_mapping_for_table
 
-    def get_fitting_tables(self, db_tables: List[str], table: str) -> List[str]:
-        """Returns all tables whose name fits the specified table."""
-        return [db_table for db_table in db_tables if table == db_table]
+        # Include not mapped columns so that they can be added to the table
+        for column in query_columns:
+            if column not in best_column_mapping.keys():
+                best_column_mapping[column] = column
 
-    def map_table_to_database_on_columns(
-        self,
-        query_data: QueryData,
-        tables_to_consider: Dict[str, List[str]],
-    ) -> Dict[str, Any]:
-        """Find the one out of the preselected database tables that fits the specified columns best."""
-        return self.best_fitting_columns(
-            tables_to_consider,
-            query_data.columns,  # TODO: columns dont need to be defined
-            # query_data.column_types,
-        )
+        # Save the result so that it can be potentially used later
+        self.saved_column_mapping = (best_table, best_column_mapping)
+        return (best_table, best_column_mapping, best_column_found_ratio)
 
-    def best_fitting_columns(
-        self,
-        db_tables: Dict[str, List[str]],
-        query_columns: List[str],
-        # column_types: List[str],
-    ) -> Dict[str, Any]:
-        """Checks all tables of the database for the one that contains most of the specified columns.
-        Returns a dict with the required information of the best fitting table"""
-        best_table_data = {
-            "table": None,
-            "table_columns": [],
-            "column_mapping": {},
-            "columns_found_ratio": 0.0,
-        }
+    def get_column_mapping_for_table(
+        self, query_columns: list[str], table_columns: list[str]
+    ) -> Dict[str, str]:
+        """Computes a mapping of query_columns to table_columns."""
+        column_mapping = []
 
-        # # The first element is the unchanged column name, as MySQL is case sensitive. The second element is used for comparison.
-        # query_columns = [
-        #     (column, column.lower(), column_type.lower())
-        #     for column, column_type in zip(columns, column_types)
-        # ]
+        # Find all potentially good mappings
+        for query_column in query_columns:
+            synonyms = self.synonym_generator.get_synonyms(query_column)
 
-        # Try to map the columns for every table
-        for db_table, db_columns in db_tables.items():
-            # # The first element is the unchanged column name, as MySQL is case sensitive.
-            # # The second element is used for comparison and the third is the type of the column.
-            # db_table_columns = [
-            #     (column_info[0], column_info[0].lower(), column_info[1].lower())
-            #     for column_info in sql_handler.get_all_columns(db_table)
-            # ]
-            column_mapping = {}
+            for table_column in table_columns:
+                match, score = process.extract(
+                    table_column, synonyms, scorer=fuzz.ratio, limit=1
+                )[0]
 
-            columns_found = 0
-            # Test for every combination of query columns and table columns, if they mtach
-            for query_column in query_columns:
-                column_found = False
-                for db_column in db_columns:
-                    # They match, if both its type and its name are identical
-                    # if (
-                    #     query_column[2] == db_table_column[2]
-                    #     and query_column[1] == db_table_column[1]
-                    # ):
-                    if query_column == db_column:
-                        columns_found += 1
-                        column_mapping[query_column[0]] = db_column[0]
-                        column_found = True
-                if column_found:
-                    continue
+                # If a synonym was found that was close to the name of the column in the database
+                # add it as a potential mapping
+                if score >= self.MINIMAL_FUZZY_SIMILARITY:
+                    column_mapping.append((query_column, table_column, score))
 
+        # Sort all found mappings descending by the score
+        column_mapping.sort(key=lambda match: match[2], reverse=True)
+
+        # Filter all found mappings, so that no columns in the query or database occur more than once
+        # Required as we only allow 1:1 mappings of columns
+        filtered_column_mapping = []
+        seen_query_columns = set()
+        seen_table_columns = set()
+
+        for match in column_mapping:
             if (
-                columns_found / len(query_columns)
-                > best_table_data["columns_found_ratio"]
+                match[0] not in seen_query_columns
+                and match[1] not in seen_table_columns
             ):
-                best_table_data["columns_found_ratio"] = columns_found / len(
-                    query_columns
-                )
-                best_table_data["table"] = db_table
-                best_table_data["table_columns"] = query_columns
-                best_table_data["column_mapping"] = column_mapping
+                filtered_column_mapping.append(match)
+                seen_query_columns.add(match[0])
+                seen_table_columns.add(match[1])
 
-        return best_table_data
+        return filtered_column_mapping
