@@ -6,7 +6,7 @@ from system.databases.python_database import PythonDatabase
 from system.insert_query_handler import InsertQueryHandler
 from system.strategies.heuristic.heuristic_strategy import HeuristicStrategy
 from system.strategies.heuristic.name_predictor import NamePredictor
-from system.strategies.llama3.llama3_model import Llama3Model, Llama3ModelType
+from system.strategies.llama3.llama3_model import Llama3Model
 from system.strategies.openai.openai_strategy import OpenAIStrategy
 from system.table_manager import TableManager
 from system.utils.utils import load_env_variables
@@ -18,13 +18,10 @@ table_manager = TableManager(database)
 
 strategies = {
     "Llama3_finetuned": None,
-    "Llama3": None,  # Llama3Model(
-    #     Llama3ModelType.NON_FINE_TUNED_LOCAL,
-    # ),
+    "Llama3": None,  # Llama3Model(),
     "GPT4": None,  # OpenAIModel(os.getenv("OPENAI_API_KEY"), os.getenv("OPENAI_ORG_ID")),
     "Heuristics": None,  # HeuristicStrategy(),
     "missing_tables_300": None,  # Llama3Model(
-    #     Llama3ModelType.FINE_TUNED,
     #     os.path.join(
     #         os.path.dirname(os.path.realpath(__file__)),
     #         "fine_tuning",
@@ -32,9 +29,7 @@ strategies = {
     #         "missing_tables_300",
     #     ),
     # ),
-    "missing_tables_0": Llama3Model(
-        Llama3ModelType.NON_FINE_TUNED,
-    ),
+    "missing_tables_0": Llama3Model(),
 }
 
 # Switch if necessary

@@ -1,5 +1,4 @@
 import os
-from enum import Enum
 from typing import Dict, List
 
 import torch
@@ -14,31 +13,17 @@ from transformers import (
 from ..large_language_model import LargeLanguageModel
 
 
-class Llama3ModelType(Enum):
-    FINE_TUNED = "fine_tuned"
-    NON_FINE_TUNED = "non_fine_tuned"
-
-
 class Llama3Model(LargeLanguageModel):
     def __init__(
         self,
-        model_type: Llama3ModelType = Llama3ModelType.NON_FINE_TUNED,
         fine_tuned_model_dir: str = None,
     ) -> None:
         self.model_name = "meta-llama/Meta-Llama-3-8B-Instruct"
-        self.model_type = model_type
 
         tokenizer = AutoTokenizer.from_pretrained(
             self.model_name, token=os.environ["HF_API_TOKEN"]
         )
-        if model_type == Llama3ModelType.NON_FINE_TUNED:
-            model = AutoModelForCausalLM.from_pretrained(
-                self.model_name,
-                token=os.environ["HF_API_TOKEN"],
-                torch_dtype=torch.bfloat16,
-                device_map="auto",
-            )
-        else:
+        if fine_tuned_model_dir:
             bnb_config = BitsAndBytesConfig(
                 load_in_4bit=True,
                 bnb_4bit_quant_type="nf4",
@@ -52,6 +37,13 @@ class Llama3Model(LargeLanguageModel):
             )
             model = PeftModel.from_pretrained(base_model, fine_tuned_model_dir)
             model = model.merge_and_unload()
+        else:
+            model = AutoModelForCausalLM.from_pretrained(
+                self.model_name,
+                token=os.environ["HF_API_TOKEN"],
+                torch_dtype=torch.bfloat16,
+                device_map="auto",
+            )
 
         tokenizer.pad_token = tokenizer.eos_token
         self.pipe = pipeline(

@@ -4,16 +4,9 @@ import os
 import re
 from typing import Any, Dict, List
 
-import torch
-from peft import PeftModel
+from system.strategies.llama3.llama3_model import Llama3Model
 from system.utils.utils import load_env_variables
 from tqdm import tqdm
-from transformers import (
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    BitsAndBytesConfig,
-    pipeline,
-)
 
 load_env_variables()
 
@@ -43,52 +36,14 @@ errors_file_path = os.path.join(evaluation_base_folder, "errors.txt")
 errors_file = open(errors_file_path, "w", encoding="utf-8")
 
 # Create model
-model_name = "meta-llama/Meta-Llama-3-8B-Instruct"
-max_new_tokens = 30
-
-tokenizer = AutoTokenizer.from_pretrained(model_name, token=os.environ["HF_API_TOKEN"])
-if fine_tuned_model_folder:
-    bnb_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        # load_4bit_use_double_quant=True,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype=torch.bfloat16,
+model = Llama3Model(
+    os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "fine_tuning",
+        "output",
+        fine_tuned_model_folder,
     )
-    base_model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        token=os.environ["HF_API_TOKEN"],
-        quantization_config=bnb_config,
-        device_map="auto",
-    )
-    model = PeftModel.from_pretrained(
-        base_model,
-        os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            "fine_tuning",
-            "output",
-            fine_tuned_model_folder,
-        ),
-    )
-    model = model.merge_and_unload()
-else:
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        token=os.environ["HF_API_TOKEN"],
-        torch_dtype=torch.bfloat16,
-        device_map="auto",
-    )
-
-tokenizer.pad_token = tokenizer.eos_token
-pipe = pipeline(
-    "text-generation",
-    model=model,
-    tokenizer=tokenizer,
-    device_map="auto",
 )
-terminators = [
-    pipe.tokenizer.eos_token_id,
-    pipe.tokenizer.convert_tokens_to_ids("<|eot_id|>"),
-]
 
 
 def generate_prompt(data_point):
@@ -126,27 +81,6 @@ def generate_prompt(data_point):
     ]
 
 
-def generate_and_tokenize_prompt(data_point):
-    full_prompt = generate_prompt(data_point)
-    return tokenizer.apply_chat_template(
-        full_prompt, tokenize=False, add_generation_prompt=True
-    )
-
-
-def run_prompt(prompt) -> str:
-    return re.search(
-        r"(?P<table>\S+)",
-        pipe(
-            prompt,
-            max_new_tokens=max_new_tokens,
-            eos_token_id=terminators,
-            do_sample=True,
-            temperature=0.6,
-            top_p=0.9,
-        )[0]["generated_text"][len(prompt) :].strip(),
-    ).group("table")
-
-
 def run_experiments_for_strategy(
     evaluation_input: List[Dict[str, Any]]
 ) -> List[Dict[str, Any]]:
@@ -162,7 +96,7 @@ def run_experiments_for_strategy(
                 data_point["query"][:12]
                 + data_point["query"][data_point["query"].find("(") :]
             )
-            table_name_generation_prompt = generate_and_tokenize_prompt(data_point)
+            table_name_generation_prompt = generate_prompt(data_point)
 
             database_tables = (
                 [
@@ -175,7 +109,7 @@ def run_experiments_for_strategy(
 
             # Try 3 times. When no alternative name is found, skip this query.
             for i in range(3):
-                table_name = run_prompt(table_name_generation_prompt)
+                table_name = model.run_prompt(table_name_generation_prompt)
                 if table_name not in database_tables:
                     break
             if table_name in database_tables:
@@ -193,13 +127,13 @@ def run_experiments_for_strategy(
             result_point["expected_table_name"] = table_name
 
             # Run evaluation prompt
-            prompt = generate_and_tokenize_prompt(result_point)
-            result_point["predicted_table_name"] = run_prompt(prompt)
+            prompt = generate_prompt(result_point)
+            result_point["predicted_table_name"] = model.run_prompt(prompt)
             result_points.append(result_point)
         else:
             # Run prompt directly
-            prompt = generate_and_tokenize_prompt(data_point)
-            data_point["predicted_table_name"] = run_prompt(prompt)
+            prompt = generate_prompt(data_point)
+            data_point["predicted_table_name"] = model.run_prompt(prompt)
             result_points.append(data_point)
 
     return result_points

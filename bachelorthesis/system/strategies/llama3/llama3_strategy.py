@@ -2,16 +2,15 @@ import re
 
 from ...data.query_data import QueryData
 from ..strategy import Strategy
-from .llama3_model import Llama3Model, Llama3ModelType
+from .llama3_model import Llama3Model
 
 
 class Llama3Strategy(Strategy):
     def __init__(
         self,
-        model_type: Llama3ModelType = Llama3ModelType.NON_FINE_TUNED,
-        fine_tuned_model_dir: str = None,
+        model: Llama3Model,
     ) -> None:
-        self.model = Llama3Model(model_type, fine_tuned_model_dir=fine_tuned_model_dir)
+        self.model = model
 
     def predict_table_name(self, query_data: QueryData) -> str:
         database_string = (

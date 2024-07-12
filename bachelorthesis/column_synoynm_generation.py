@@ -1,52 +1,14 @@
-import gc
 import json
 import os
 from collections import defaultdict
 
-import torch
+from system.strategies.llama3.llama3_model import Llama3Model
 from system.utils.utils import load_env_variables, remove_quotes
 from tqdm import tqdm
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
 load_env_variables()
 
-model_name = "meta-llama/Meta-Llama-3-8B-Instruct"
-
-tokenizer = AutoTokenizer.from_pretrained(model_name, token=os.environ["HF_API_TOKEN"])
-model = AutoModelForCausalLM.from_pretrained(
-    model_name,
-    token=os.environ["HF_API_TOKEN"],
-    torch_dtype=torch.bfloat16,
-    device_map="auto",
-)
-tokenizer.pad_token = tokenizer.eos_token
-pipe = pipeline(
-    "text-generation",
-    model=model,
-    tokenizer=tokenizer,
-    device_map="auto",
-)
-
-
-def run_prompt(messages: list[dict[str, str]]) -> str:
-    """Runs a prompt on a Llama2 model and returns its answer"""
-    prompt = pipe.tokenizer.apply_chat_template(
-        messages, tokenize=False, add_generation_prompt=True
-    )
-
-    terminators = [
-        pipe.tokenizer.eos_token_id,
-        pipe.tokenizer.convert_tokens_to_ids("<|eot_id|>"),
-    ]
-
-    return pipe(
-        prompt,
-        max_new_tokens=10,
-        eos_token_id=terminators,
-        do_sample=True,
-        temperature=0.6,
-        top_p=0.9,
-    )[0]["generated_text"][len(prompt) :].strip()
+model = Llama3Model()
 
 
 def generate_synonyms(data_point: dict[str, str], synonyms) -> None:
@@ -69,7 +31,7 @@ def generate_synonyms(data_point: dict[str, str], synonyms) -> None:
         ]
 
         for i in range(3):
-            predicted_name = remove_quotes(run_prompt(messages))
+            predicted_name = remove_quotes(model.run_prompt(messages))
 
             if (
                 predicted_name != column

@@ -1,21 +1,12 @@
-import copy
 import json
 import os
-import re
 from typing import Any, Dict, List
 
-import torch
-from peft import PeftModel
 from system.data.query_data import QueryData
 from system.insert_query_parser import parse_insert_query
+from system.strategies.llama3.llama3_model import Llama3Model
 from system.utils.utils import load_env_variables
 from tqdm import tqdm
-from transformers import (
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    BitsAndBytesConfig,
-    pipeline,
-)
 
 load_env_variables()
 
@@ -46,51 +37,15 @@ errors_file_path = os.path.join(evaluation_base_folder, "errors.txt")
 errors_file = open(errors_file_path, "w", encoding="utf-8")
 
 # Create model
-model_name = "meta-llama/Meta-Llama-3-8B-Instruct"
-max_new_tokens = 300
-
-tokenizer = AutoTokenizer.from_pretrained(model_name, token=os.environ["HF_API_TOKEN"])
-if fine_tuned_model_folder:
-    bnb_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype=torch.bfloat16,
+model = Llama3Model(
+    os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        "fine_tuning",
+        "output",
+        fine_tuned_model_folder,
     )
-    base_model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        token=os.environ["HF_API_TOKEN"],
-        quantization_config=bnb_config,
-        device_map="auto",
-    )
-    model = PeftModel.from_pretrained(
-        base_model,
-        os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            "fine_tuning",
-            "output",
-            fine_tuned_model_folder,
-        ),
-    )
-    model = model.merge_and_unload()
-else:
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        token=os.environ["HF_API_TOKEN"],
-        torch_dtype=torch.bfloat16,
-        device_map="auto",
-    )
-
-tokenizer.pad_token = tokenizer.eos_token
-pipe = pipeline(
-    "text-generation",
-    model=model,
-    tokenizer=tokenizer,
-    device_map="auto",
 )
-terminators = [
-    pipe.tokenizer.eos_token_id,
-    pipe.tokenizer.convert_tokens_to_ids("<|eot_id|>"),
-]
+max_new_tokens = 300
 
 
 def generate_prompt_for_single_column(data_point, value, column="No column specified"):
@@ -137,42 +92,6 @@ def generate_prompt(data_point):
     ]
 
 
-def generate_and_tokenize_prompt_for_single_column(data_point, value, column):
-    full_prompt = generate_prompt_for_single_column(data_point, value, column)
-    return tokenizer.apply_chat_template(
-        full_prompt, tokenize=False, add_generation_prompt=True
-    )
-
-
-def generate_and_tokenize_prompt(data_point):
-    full_prompt = generate_prompt(data_point)
-    return tokenizer.apply_chat_template(
-        full_prompt, tokenize=False, add_generation_prompt=True
-    )
-
-
-def run_prompt(prompt) -> str:
-    # return re.search(
-    #     r"(?P<column>\S+)",
-    #     pipe(
-    #         prompt,
-    #         max_new_tokens=max_new_tokens,
-    #         eos_token_id=terminators,
-    #         do_sample=True,
-    #         temperature=0.6,
-    #         top_p=0.9,
-    #     )[0]["generated_text"][len(prompt) :].strip(),
-    # ).group("column")
-    return pipe(
-        prompt,
-        max_new_tokens=max_new_tokens,
-        eos_token_id=terminators,
-        do_sample=True,
-        temperature=0.6,
-        top_p=0.9,
-    )[0]["generated_text"][len(prompt) :].strip()
-
-
 def run_experiments_for_strategy(
     evaluation_input: List[Dict[str, Any]]
 ) -> List[Dict[str, Any]]:
@@ -180,18 +99,19 @@ def run_experiments_for_strategy(
     for data_point in tqdm(evaluation_input):
         # Run prompt directly
         if "combined_columns" in fine_tuned_model_folder:
-            prompt = generate_and_tokenize_prompt(data_point)
-            data_point["predicted_column_names"] = run_prompt(prompt)
+            prompt = generate_prompt(data_point)
+            data_point["predicted_column_names"] = model.run_prompt(
+                prompt, max_new_tokens
+            )
         else:
             query_data = parse_insert_query(QueryData(data_point["query"], None))
             if not query_data.columns:
                 query_data.columns = [None for i in range(len(query_data.values[0]))]
             data_point["predicted_column_names"] = ";".join(
                 [
-                    run_prompt(
-                        generate_and_tokenize_prompt_for_single_column(
-                            data_point, value, column
-                        )
+                    model.run_prompt(
+                        generate_prompt_for_single_column(data_point, value, column),
+                        max_new_tokens,
                     )
                     for value, column in zip(query_data.values[0], query_data.columns)
                 ]
