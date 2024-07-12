@@ -4,9 +4,9 @@ import os
 from collections import defaultdict
 
 import torch
+from system.utils.utils import load_env_variables, remove_quotes
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
-from utils import load_env_variables
 
 load_env_variables()
 
@@ -47,12 +47,6 @@ def run_prompt(messages: list[dict[str, str]]) -> str:
         temperature=0.6,
         top_p=0.9,
     )[0]["generated_text"][len(prompt) :].strip()
-
-
-def remove_quotes(name: str) -> str:
-    if name.startswith("'") or name.startswith('"'):
-        return name[1:-1]
-    return name
 
 
 def generate_synonyms(data_point: dict[str, str], synonyms) -> None:

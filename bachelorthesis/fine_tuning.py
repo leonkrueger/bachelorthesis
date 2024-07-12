@@ -10,13 +10,13 @@ import transformers
 import wandb
 from datasets import load_dataset
 from peft import LoraConfig, PeftConfig, get_peft_model, prepare_model_for_kbit_training
+from system.utils.utils import load_env_variables
 from transformers import (
     AutoConfig,
     AutoModelForCausalLM,
     AutoTokenizer,
     BitsAndBytesConfig,
 )
-from utils import load_env_variables
 
 load_env_variables()
 

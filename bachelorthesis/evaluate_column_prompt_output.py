@@ -8,6 +8,7 @@ import torch
 from peft import PeftModel
 from system.data.query_data import QueryData
 from system.insert_query_parser import parse_insert_query
+from system.utils.utils import load_env_variables
 from tqdm import tqdm
 from transformers import (
     AutoModelForCausalLM,
@@ -15,7 +16,6 @@ from transformers import (
     BitsAndBytesConfig,
     pipeline,
 )
-from utils import load_env_variables
 
 load_env_variables()
 

@@ -6,6 +6,7 @@ from typing import Any, Dict, List
 
 import torch
 from peft import PeftModel
+from system.utils.utils import load_env_variables
 from tqdm import tqdm
 from transformers import (
     AutoModelForCausalLM,
@@ -13,7 +14,6 @@ from transformers import (
     BitsAndBytesConfig,
     pipeline,
 )
-from utils import load_env_variables
 
 load_env_variables()
 

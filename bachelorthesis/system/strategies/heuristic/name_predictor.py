@@ -1,16 +1,11 @@
 from ...data.query_data import QueryData
+from ...utils.utils import remove_quotes
 from ..large_language_model import LargeLanguageModel
 
 
 class NamePredictor:
     def __init__(self, model: LargeLanguageModel) -> None:
         self.model = model
-
-    def remove_quotes(name: str) -> str:
-        """Removes the quotes from a name, if it has any"""
-        if name.startswith("'") or name.startswith('"'):
-            return name[1:-1]
-        return name
 
     def predict_table_name(self, query_data: QueryData) -> str:
         """Predicts a suitable table name for an insertion query"""
@@ -28,7 +23,7 @@ class NamePredictor:
             },
         ]
 
-        return self.remove_quotes(self.model.run_prompt(messages))
+        return remove_quotes(self.model.run_prompt(messages))
 
     def predict_column_name(self, query_data: QueryData, value: str) -> str:
         """Predicts a suitable column name for a specific value of a query"""
@@ -48,4 +43,4 @@ class NamePredictor:
             },
         ]
 
-        return self.remove_quotes(self.model.run_prompt(messages))
+        return remove_quotes(self.model.run_prompt(messages))
