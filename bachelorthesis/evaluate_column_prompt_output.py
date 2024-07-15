@@ -12,8 +12,8 @@ from system.strategies.llama3.llama3_model import Llama3Model
 from tqdm import tqdm
 
 # Switch if necessary
-strategy_name = "missing_columns_12000_combined_columns_2"
-fine_tuned_model_folder = "missing_columns_12000_1_combined_columns_2"
+strategy_name = "missing_columns_12000_combined_columns_num"
+fine_tuned_model_folder = "missing_columns_12000_1_combined_columns_num"
 evaluation_input_files = [
     "evaluation_data",
     "evaluation_data_columns_deleted",
@@ -72,7 +72,7 @@ def generate_prompt_for_single_column(data_point, value, column="No column speci
     ]
 
 
-def generate_prompt(data_point):
+def generate_prompt(data_point, number_of_columns):
     return [
         {
             "role": "system",
@@ -85,7 +85,7 @@ def generate_prompt(data_point):
         },
         {
             "role": "user",
-            "content": "Predict the columns for this query:\n"
+            "content": f"Predict the {number_of_columns} columns for this query:\n"
             f"Query: {data_point['query']}\n"
             f"{data_point['table_state']}\n"
             "Columns:",
@@ -98,14 +98,14 @@ def run_experiments_for_strategy(
 ) -> List[Dict[str, Any]]:
     result_points = []
     for data_point in tqdm(evaluation_input):
+        query_data = parse_insert_query(QueryData(data_point["query"], None))
         # Run prompt directly
         if "combined_columns" in fine_tuned_model_folder:
-            prompt = generate_prompt(data_point)
+            prompt = generate_prompt(data_point, len(query_data.values[0]))
             data_point["predicted_column_names"] = model.run_prompt(
                 prompt, max_new_tokens
             )
         else:
-            query_data = parse_insert_query(QueryData(data_point["query"], None))
             if not query_data.columns:
                 query_data.columns = [None for i in range(len(query_data.values[0]))]
             data_point["predicted_column_names"] = ";".join(
