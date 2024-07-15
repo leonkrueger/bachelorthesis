@@ -13,6 +13,6 @@ source venv/bin/activate
 # nvidia-smi  # test if it works
 # python -c "import torch; print(torch.cuda.device_count())"
 
-python3 bachelorthesis/fine_tuning/fine_tuning.py  # run your stuff
+python3 bachelorthesis/fine_tuning.py  # run your stuff
 
 deactivate

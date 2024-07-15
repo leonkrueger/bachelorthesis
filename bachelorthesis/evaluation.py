@@ -2,6 +2,10 @@ import json
 import os
 import traceback
 
+from system.utils.utils import load_env_variables
+
+load_env_variables()
+
 from system.databases.python_database import PythonDatabase
 from system.insert_query_handler import InsertQueryHandler
 from system.strategies.heuristic.heuristic_strategy import HeuristicStrategy
@@ -9,9 +13,6 @@ from system.strategies.heuristic.name_predictor import NamePredictor
 from system.strategies.llama3.llama3_model import Llama3Model
 from system.strategies.openai.openai_strategy import OpenAIStrategy
 from system.table_manager import TableManager
-from system.utils.utils import load_env_variables
-
-load_env_variables()
 
 database = PythonDatabase()
 table_manager = TableManager(database)

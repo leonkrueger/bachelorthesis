@@ -3,6 +3,10 @@
 
 import os
 
+from system.utils.utils import load_env_variables
+
+load_env_variables()
+
 import bitsandbytes as bnb
 import torch
 import torch.nn as nn
@@ -10,15 +14,12 @@ import transformers
 import wandb
 from datasets import load_dataset
 from peft import LoraConfig, PeftConfig, get_peft_model, prepare_model_for_kbit_training
-from system.utils.utils import load_env_variables
 from transformers import (
     AutoConfig,
     AutoModelForCausalLM,
     AutoTokenizer,
     BitsAndBytesConfig,
 )
-
-load_env_variables()
 
 model_id = "meta-llama/Meta-Llama-3-8B-Instruct"
 train_input_file = "missing_columns_12000_combined_columns_2"
@@ -32,6 +33,7 @@ wandb.init(name=wandb_run_name)
 
 
 def generate_prompt(data_point):
+    # Table prediction prompt:
     # return [
     #     {
     #         "role": "system",
@@ -47,6 +49,8 @@ def generate_prompt(data_point):
     #     },
     #     {"role": "assistant", "content": f"{data_point['Response'][7:]}"},
     # ]
+
+    # Column prediction prompt (single column)
     # return [
     #     {
     #         "role": "system",
@@ -62,6 +66,8 @@ def generate_prompt(data_point):
     #     },
     #     {"role": "assistant", "content": f"{data_point['Response'][8:]}"},
     # ]
+
+    # Column prediction prompt (multiple columns)
     return [
         {
             "role": "system",

@@ -2,11 +2,12 @@ import json
 import os
 from collections import defaultdict
 
-from system.strategies.llama3.llama3_model import Llama3Model
 from system.utils.utils import load_env_variables, remove_quotes
-from tqdm import tqdm
 
 load_env_variables()
+
+from system.strategies.llama3.llama3_model import Llama3Model
+from tqdm import tqdm
 
 model = Llama3Model()
 

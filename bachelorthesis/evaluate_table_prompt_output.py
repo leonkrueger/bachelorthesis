@@ -4,11 +4,12 @@ import os
 import re
 from typing import Any, Dict, List
 
-from system.strategies.llama3.llama3_model import Llama3Model
 from system.utils.utils import load_env_variables
-from tqdm import tqdm
 
 load_env_variables()
+
+from system.strategies.llama3.llama3_model import Llama3Model
+from tqdm import tqdm
 
 # Switch if necessary
 strategy_name = "missing_tables_1500"

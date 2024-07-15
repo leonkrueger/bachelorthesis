@@ -4,7 +4,11 @@ import os
 def load_env_variables() -> None:
     """Loads the environment variables stored in the .env file.
     File needs to be in the top folder of the project."""
-    with open(os.path.join("..", "..", "..", ".env")) as env_file:
+    with open(
+        os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", ".env"
+        )
+    ) as env_file:
         for line in env_file.readlines():
             if line.startswith("#") or not line.strip():
                 continue

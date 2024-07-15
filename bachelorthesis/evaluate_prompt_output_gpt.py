@@ -1,14 +1,14 @@
-import copy
 import json
 import os
 import re
 from typing import Any, Dict, List
 
-from system.strategies.openai.openai import openai_execute
 from system.utils.utils import load_env_variables
-from tqdm import tqdm
 
 load_env_variables()
+
+from system.strategies.openai.openai import openai_execute
+from tqdm import tqdm
 
 # Switch if necessary
 model = "gpt-3.5-turbo-0125"

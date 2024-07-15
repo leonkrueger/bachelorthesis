@@ -2,13 +2,14 @@ import json
 import os
 from typing import Any, Dict, List
 
+from system.utils.utils import load_env_variables
+
+load_env_variables()
+
 from system.data.query_data import QueryData
 from system.insert_query_parser import parse_insert_query
 from system.strategies.llama3.llama3_model import Llama3Model
-from system.utils.utils import load_env_variables
 from tqdm import tqdm
-
-load_env_variables()
 
 # Switch if necessary
 strategy_name = "missing_columns_12000_combined_columns_2"
