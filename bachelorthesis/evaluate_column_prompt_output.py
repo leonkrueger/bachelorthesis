@@ -12,8 +12,8 @@ from system.strategies.llama3.llama3_model import Llama3Model
 from tqdm import tqdm
 
 # Switch if necessary
-strategy_name = "missing_columns_12000_combined_columns_num"
-fine_tuned_model_folder = "missing_columns_12000_1_combined_columns_num"
+strategy_name = "missing_columns_12000_csv_already_predicted"
+fine_tuned_model_folder = "missing_columns_12000_1_csv_already_predicted"
 evaluation_input_files = [
     "evaluation_data",
     "evaluation_data_columns_deleted",
@@ -22,6 +22,7 @@ evaluation_folder = os.path.join(
     "further_evaluation", "error_cases_missing_columns_combined_columns"
 )
 different_name_already_generated = True
+max_new_tokens = 30
 
 # Depends on if the script is run in Docker or as plain python
 # evaluation_base_folder = os.path.join("/app", "evaluation")
@@ -46,10 +47,11 @@ model = Llama3Model(
         fine_tuned_model_folder,
     )
 )
-max_new_tokens = 300
 
 
-def generate_prompt_for_single_column(data_point, value, column="No column specified"):
+def generate_prompt_for_single_column(
+    data_point, value, column="No column specified", already_predicted_columns=[]
+):
     return [
         {
             "role": "system",
@@ -57,17 +59,27 @@ def generate_prompt_for_single_column(data_point, value, column="No column speci
             "The inserts can contain abbreviated or synonymous column names. The column names can also be missing entirely. "
             "Base your guess on the available information. "
             "If there is a suitable column in the table answer its name. Else, predict a suitable name for a new column in this table. "
+            "Avoid answering with already predicted columns. "
             "Answer only with the name of the column. Don't give any explanation for your result.",
         },
         {
             "role": "user",
             "content": (
                 "Predict the column for this value:\n"
+                f"Query: {data_point['query']}\n"
+                f"{data_point['table_state']}\n"
+                f"Already predicted columns: {', '.join(already_predicted_columns)}\n"
                 f"Specified column: {column}\n"
                 f"Value: {value}\n"
-                f"{data_point['table_state']}\n"
                 "Column:",
             ),
+            # "content": (
+            #     "Predict the column for this value:\n"
+            #     f"Specified column: {column}\n"
+            #     f"Value: {value}\n"
+            #     f"{data_point['table_state']}\n"
+            #     "Column:",
+            # ),
         },
     ]
 
@@ -108,15 +120,18 @@ def run_experiments_for_strategy(
         else:
             if not query_data.columns:
                 query_data.columns = [None for i in range(len(query_data.values[0]))]
-            data_point["predicted_column_names"] = ";".join(
-                [
+
+            predicted_columns = []
+            for value, column in zip(query_data.values[0], query_data.columns):
+                predicted_columns.append(
                     model.run_prompt(
-                        generate_prompt_for_single_column(data_point, value, column),
+                        generate_prompt_for_single_column(
+                            data_point, value, column, predicted_columns
+                        ),
                         max_new_tokens,
                     )
-                    for value, column in zip(query_data.values[0], query_data.columns)
-                ]
-            )
+                )
+            data_point["predicted_column_names"] = predicted_columns
         result_points.append(data_point)
 
     return result_points

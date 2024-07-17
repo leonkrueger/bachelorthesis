@@ -22,10 +22,10 @@ from transformers import (
 )
 
 model_id = "meta-llama/Meta-Llama-3-8B-Instruct"
-train_input_file = "missing_columns_12000_combined_columns_2"
-validation_input_file = "missing_columns_combined_columns_2"
-output_dir = "missing_columns_12000_1_combined_columns_2"
-wandb_run_name = "12000_queries_1_epochs_combined_columns_2"
+train_input_file = "missing_columns_12000_csv_already_predicted"
+validation_input_file = "missing_columns_csv_already_predicted"
+output_dir = "missing_columns_12000_1_csv_already_predicted"
+wandb_run_name = "12000_queries_1_epochs_csv_already_predicted"
 
 os.environ["WANDB_PROJECT"] = "bachelorthesis_missing_columns"
 wandb.login()
@@ -51,39 +51,40 @@ def generate_prompt(data_point):
     # ]
 
     # Column prediction prompt (single column)
-    # return [
-    #     {
-    #         "role": "system",
-    #         "content": "You are an intelligent database that predicts the columns of a SQL-insert. "
-    #         "The inserts can contain abbreviated or synonymous column names. The column names can also be missing entirely. "
-    #         "Base your guess on the available information. "
-    #         "If there is a suitable column in the table answer its name. Else, predict a suitable name for a new column in this table. "
-    #         "Answer only with the name of the column. Don't give any explanation for your result.",
-    #     },
-    #     {
-    #         "role": "user",
-    #         "content": f"{data_point['Instruction']}\n" "Column:",
-    #     },
-    #     {"role": "assistant", "content": f"{data_point['Response'][8:]}"},
-    # ]
-
-    # Column prediction prompt (multiple columns)
     return [
         {
             "role": "system",
             "content": "You are an intelligent database that predicts the columns of a SQL-insert. "
-            "Predict the column name for each value in the insert. "
             "The inserts can contain abbreviated or synonymous column names. The column names can also be missing entirely. "
             "Base your guess on the available information. "
-            "If there is a suitable column in the table use its name. Else, predict a suitable name for a new column in this table. "
-            "Don't give any explanation for your result.",
+            "If there is a suitable column in the table answer its name. Else, predict a suitable name for a new column in this table. "
+            "Avoid answering with already predicted columns. "
+            "Answer only with the name of the column. Don't give any explanation for your result.",
         },
         {
             "role": "user",
-            "content": f"{data_point['Instruction']}\n" "Columns:",
+            "content": f"{data_point['Instruction']}\n" "Column:",
         },
         {"role": "assistant", "content": f"{data_point['Response'][8:]}"},
     ]
+
+    # Column prediction prompt (multiple columns)
+    # return [
+    #     {
+    #         "role": "system",
+    #         "content": "You are an intelligent database that predicts the columns of a SQL-insert. "
+    #         "Predict the column name for each value in the insert. "
+    #         "The inserts can contain abbreviated or synonymous column names. The column names can also be missing entirely. "
+    #         "Base your guess on the available information. "
+    #         "If there is a suitable column in the table use its name. Else, predict a suitable name for a new column in this table. "
+    #         "Don't give any explanation for your result.",
+    #     },
+    #     {
+    #         "role": "user",
+    #         "content": f"{data_point['Instruction']}\n" "Columns:",
+    #     },
+    #     {"role": "assistant", "content": f"{data_point['Response'][9:]}"},
+    # ]
 
 
 def generate_and_tokenize_prompt(data_point):
