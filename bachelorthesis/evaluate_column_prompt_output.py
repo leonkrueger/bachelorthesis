@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from system.utils.utils import load_env_variables
 
@@ -50,7 +50,11 @@ model = Llama3Model(
 
 
 def generate_prompt_for_single_column(
-    data_point, value, column="No column specified", already_predicted_columns=[]
+    data_point,
+    value,
+    column="No column specified",
+    already_predicted_columns=[],
+    custom_table_state=None,
 ):
     return [
         {
@@ -59,7 +63,7 @@ def generate_prompt_for_single_column(
             "The inserts can contain abbreviated or synonymous column names. The column names can also be missing entirely. "
             "Base your guess on the available information. "
             "If there is a suitable column in the table answer its name. Else, predict a suitable name for a new column in this table. "
-            "Avoid answering with already predicted columns. "
+            # "Avoid answering with already predicted columns. "
             "Answer only with the name of the column. Don't give any explanation for your result.",
         },
         {
@@ -67,8 +71,8 @@ def generate_prompt_for_single_column(
             "content": (
                 "Predict the column for this value:\n"
                 f"Query: {data_point['query']}\n"
-                f"{data_point['table_state']}\n"
-                f"Already predicted columns: {', '.join(already_predicted_columns)}\n"
+                f"{data_point['table_state'] if custom_table_state is None else custom_table_state}\n"
+                # f"Already predicted columns: {', '.join(already_predicted_columns)}\n"
                 f"Specified column: {column}\n"
                 f"Value: {value}\n"
                 "Column:",
@@ -105,6 +109,28 @@ def generate_prompt(data_point, number_of_columns):
     ]
 
 
+def get_table_state_from_str(
+    table_state: str,
+) -> Tuple[str, List[str], List[List[str]]]:
+    rows = table_state.split("\n")
+    table = rows[0][6:-1]
+    columns = rows[1].split(";")
+    values = (
+        []
+        if len(rows) <= 2
+        else [[value for value in row.split(";")] for row in rows[2:]]
+    )
+    return (table, columns, values)
+
+
+def get_table_state_str(
+    table_name: str, columns: List[str], values: List[List[str]]
+) -> str:
+    return f"Table {table_name}:\n{';'.join(columns)}\n" + "\n".join(
+        [";".join(row) for row in values]
+    )
+
+
 def run_experiments_for_strategy(
     evaluation_input: List[Dict[str, Any]]
 ) -> List[Dict[str, Any]]:
@@ -121,17 +147,37 @@ def run_experiments_for_strategy(
             if not query_data.columns:
                 query_data.columns = [None for i in range(len(query_data.values[0]))]
 
-            predicted_columns = []
+            data_point["predicted_column_names"] = []
+            table, columns, values = get_table_state_from_str(data_point["table_state"])
+
+            # Check that the data was parsed correctly
+            # If not, ignore this data point
+            if len(values) != 0 and (
+                len(columns) != len(values[0])
+                or any([len(row) != len(values[0]) for row in values[1:]])
+            ):
+                continue
+
             for value, column in zip(query_data.values[0], query_data.columns):
-                predicted_columns.append(
-                    model.run_prompt(
-                        generate_prompt_for_single_column(
-                            data_point, value, column, predicted_columns
-                        ),
-                        max_new_tokens,
-                    )
+                predicted = model.run_prompt(
+                    generate_prompt_for_single_column(
+                        data_point,
+                        value,
+                        column,
+                        get_table_state_str(table, columns, values),
+                    ),
+                    max_new_tokens,
                 )
-            data_point["predicted_column_names"] = predicted_columns
+                data_point["predicted_column_names"].append(predicted)
+
+                # Changes table state, so that predicted column is no longer included
+                if predicted in columns:
+                    column_index = columns.index(predicted)
+                    columns = columns.remove(predicted)
+                    values = [
+                        [value for i, value in enumerate(row) if i != column_index]
+                        for row in values
+                    ]
         result_points.append(data_point)
 
     return result_points
