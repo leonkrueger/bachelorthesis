@@ -173,7 +173,7 @@ def run_experiments_for_strategy(
                 # Changes table state, so that predicted column is no longer included
                 if predicted in columns:
                     column_index = columns.index(predicted)
-                    columns = columns.remove(predicted)
+                    columns.remove(predicted)
                     values = [
                         [value for i, value in enumerate(row) if i != column_index]
                         for row in values
