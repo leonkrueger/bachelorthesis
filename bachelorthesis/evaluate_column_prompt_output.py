@@ -53,37 +53,57 @@ def generate_prompt_for_single_column(
     data_point,
     value,
     column="No column specified",
-    already_predicted_columns=[],
+    already_predicted_columns=None,
     custom_table_state=None,
 ):
     return [
         {
             "role": "system",
-            "content": "You are an intelligent database that predicts the columns of a SQL-insert. "
-            "The inserts can contain abbreviated or synonymous column names. The column names can also be missing entirely. "
-            "Base your guess on the available information. "
-            "If there is a suitable column in the table answer its name. Else, predict a suitable name for a new column in this table. "
-            # "Avoid answering with already predicted columns. "
-            "Answer only with the name of the column. Don't give any explanation for your result.",
+            "content": (
+                "You are an intelligent database that predicts the columns of a SQL-insert. "
+                "The inserts can contain abbreviated or synonymous column names. The column names can also be missing entirely. "
+                "Base your guess on the available information. "
+                "If there is a suitable column in the table answer its name. Else, predict a suitable name for a new column in this table. "
+                + "Avoid answering with already predicted columns. "
+                if already_predicted_columns is not None
+                else ""
+                + "Answer only with the name of the column. Don't give any explanation for your result."
+            ),
         },
         {
             "role": "user",
             "content": (
-                "Predict the column for this value:\n"
-                f"Query: {data_point['query']}\n"
-                f"{data_point['table_state'] if custom_table_state is None else custom_table_state}\n"
-                # f"Already predicted columns: {', '.join(already_predicted_columns)}\n"
-                f"Specified column: {column}\n"
-                f"Value: {value}\n"
-                "Column:",
+                (
+                    (
+                        "Predict the column for this value:\n"
+                        f"Query: {data_point['query']}\n"
+                        f"{data_point['table_state']}\n"
+                        f"Already predicted columns: {', '.join(already_predicted_columns)}\n"
+                        f"Specified column: {column}\n"
+                        f"Value: {value}\n"
+                        "Column:"
+                    ),
+                )
+                if already_predicted_columns is not None
+                else (
+                    (
+                        "Predict the column for this value:\n"
+                        f"Query: {data_point['query']}\n"
+                        f"{custom_table_state}\n"
+                        f"Specified column: {column}\n"
+                        f"Value: {value}\n"
+                        "Column:"
+                    )
+                    if custom_table_state is not None
+                    else (
+                        "Predict the column for this value:\n"
+                        f"Specified column: {column}\n"
+                        f"Value: {value}\n"
+                        f"{data_point['table_state']}\n"
+                        "Column:",
+                    )
+                )
             ),
-            # "content": (
-            #     "Predict the column for this value:\n"
-            #     f"Specified column: {column}\n"
-            #     f"Value: {value}\n"
-            #     f"{data_point['table_state']}\n"
-            #     "Column:",
-            # ),
         },
     ]
 
@@ -164,7 +184,7 @@ def run_experiments_for_strategy(
                         data_point,
                         value,
                         column,
-                        get_table_state_str(table, columns, values),
+                        custom_table_state=get_table_state_str(table, columns, values),
                     ),
                     max_new_tokens,
                 )
