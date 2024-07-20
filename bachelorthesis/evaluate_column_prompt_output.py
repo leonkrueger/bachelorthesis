@@ -146,6 +146,10 @@ def run_experiments_for_strategy(
     result_points = []
     for data_point in tqdm(evaluation_input):
         query_data = parse_insert_query(QueryData(data_point["query"], None))
+
+        if not query_data.columns:
+            query_data.columns = [None for i in range(len(query_data.values[0]))]
+
         # Run prompt directly
         if "combined_columns" in strategy_name:
             prompt = generate_prompt(data_point, len(query_data.values[0]))
@@ -153,9 +157,6 @@ def run_experiments_for_strategy(
                 prompt, max_new_tokens
             )
         elif "predicted_removed_from_table_state" in strategy_name:
-            if not query_data.columns:
-                query_data.columns = [None for i in range(len(query_data.values[0]))]
-
             data_point["predicted_column_names"] = []
             table, columns, values = get_table_state_from_str(data_point["table_state"])
 
