@@ -86,22 +86,11 @@ def generate_prompt_for_single_column(
                 )
                 if already_predicted_columns is not None
                 else (
-                    (
-                        "Predict the column for this value:\n"
-                        f"Query: {data_point['query']}\n"
-                        f"{custom_table_state}\n"
-                        f"Specified column: {column}\n"
-                        f"Value: {value}\n"
-                        "Column:"
-                    )
-                    if custom_table_state is not None
-                    else (
-                        "Predict the column for this value:\n"
-                        f"Specified column: {column}\n"
-                        f"Value: {value}\n"
-                        f"{data_point['table_state']}\n"
-                        "Column:",
-                    )
+                    "Predict the column for this value:\n"
+                    f"Specified column: {column}\n"
+                    f"Value: {value}\n"
+                    f"{custom_table_state if custom_table_state is not None else data_point['table_state']}\n"
+                    "Column:"
                 )
             ),
         },
