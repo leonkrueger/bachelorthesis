@@ -147,12 +147,12 @@ def run_experiments_for_strategy(
     for data_point in tqdm(evaluation_input):
         query_data = parse_insert_query(QueryData(data_point["query"], None))
         # Run prompt directly
-        if "combined_columns" in fine_tuned_model_folder:
+        if "combined_columns" in strategy_name:
             prompt = generate_prompt(data_point, len(query_data.values[0]))
             data_point["predicted_column_names"] = model.run_prompt(
                 prompt, max_new_tokens
             )
-        else:
+        elif "predicted_removed_from_table_state" in strategy_name:
             if not query_data.columns:
                 query_data.columns = [None for i in range(len(query_data.values[0]))]
 
@@ -187,6 +187,29 @@ def run_experiments_for_strategy(
                         [value for i, value in enumerate(row) if i != column_index]
                         for row in values
                     ]
+        elif "already_predicted" in strategy_name:
+            predicted_columns = []
+            for value, column in zip(query_data.values[0], query_data.columns):
+                predicted_columns.append(
+                    model.run_prompt(
+                        generate_prompt_for_single_column(
+                            data_point,
+                            value,
+                            column,
+                            already_predicted_columns=predicted_columns,
+                        ),
+                        max_new_tokens,
+                    )
+                )
+            data_point["predicted_column_names"] = predicted_columns
+        else:
+            data_point["predicted_column_names"] = [
+                model.run_prompt(
+                    generate_prompt_for_single_column(data_point, value, column),
+                    max_new_tokens,
+                )
+                for value, column in zip(query_data.values[0], query_data.columns)
+            ]
         result_points.append(data_point)
 
     return result_points
