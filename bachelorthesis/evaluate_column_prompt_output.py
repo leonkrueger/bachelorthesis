@@ -12,8 +12,8 @@ from system.strategies.llama3.llama3_model import Llama3Model
 from tqdm import tqdm
 
 # Switch if necessary
-strategy_name = "missing_columns_12000_csv_already_predicted"
-fine_tuned_model_folder = "missing_columns_12000_1_csv_already_predicted"
+strategy_name = "missing_columns_12000_own_predicted_removed_from_table_state"
+fine_tuned_model_folder = "missing_columns_12000_1_own"
 evaluation_input_files = [
     "evaluation_data",
     "evaluation_data_columns_deleted",
@@ -87,6 +87,7 @@ def generate_prompt_for_single_column(
                 if already_predicted_columns is not None
                 else (
                     "Predict the column for this value:\n"
+                    f"Query: {data_point['query']}\n"
                     f"Specified column: {column}\n"
                     f"Value: {value}\n"
                     f"{custom_table_state if custom_table_state is not None else data_point['table_state']}\n"
@@ -118,6 +119,10 @@ def generate_prompt(data_point, number_of_columns):
     ]
 
 
+def is_usable_value(value: str | Any) -> bool:
+    return value is not None and value.lower() != "'nan'" and value.lower() != "null"
+
+
 def get_table_state_from_str(
     table_state: str,
 ) -> Tuple[str, List[str], List[List[str]]]:
@@ -135,8 +140,14 @@ def get_table_state_from_str(
 def get_table_state_str(
     table_name: str, columns: List[str], values: List[List[str]]
 ) -> str:
-    return f"Table {table_name}:\n{';'.join(columns)}\n" + "\n".join(
-        [";".join(row) for row in values]
+    # return f"Table {table_name}:\n{';'.join(columns)}\n" + "\n".join(
+    #     [";".join(row) for row in values]
+    # )
+    return f"Table {table_name}:\n" + "\n".join(
+        [
+            f"Column {column_name}, Example values: [{', '.join([row[column_index] for row in columns if is_usable_value(row[column_index])])}]"
+            for column_index, column_name in enumerate(columns)
+        ]
     )
 
 
