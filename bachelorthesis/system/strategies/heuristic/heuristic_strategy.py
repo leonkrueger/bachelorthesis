@@ -75,7 +75,7 @@ class HeuristicStrategy(Strategy):
         # If no match was found, predict a new table name
         return self.name_predictor.predict_table_name(query_data)
 
-    def predict_column_mapping(self, query_data: QueryData) -> Dict[str, str]:
+    def predict_column_mapping(self, query_data: QueryData) -> List[str]:
         # If we already computed the table mapping in the table name prediction step, we use this
         if (
             self.saved_column_mapping
@@ -102,15 +102,19 @@ class HeuristicStrategy(Strategy):
             else []
         )
         # Compute the column mapping
-        table, column_mapping, column_found_ratio = self.get_column_mapping_for_table(
+        column_mapping = self.get_column_mapping_for_table(
             query_columns, database_columns
         )
-        # Include not mapped columns so that they can be added to the table
-        for column in query_columns:
-            if column not in column_mapping.keys():
-                column_mapping[column] = column
 
-        return column_mapping
+        # Create ordered list of predicted columns with all names
+        predicted_columns = []
+        for query_column in query_columns:
+            if query_column in column_mapping.keys():
+                predicted_columns.append(column_mapping[query_column])
+            else:
+                predicted_columns.append(query_column)
+
+        return predicted_columns
 
     def get_column_mapping_for_best_table(
         self, query_data: QueryData
