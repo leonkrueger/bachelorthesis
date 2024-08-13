@@ -1,14 +1,11 @@
 from typing import Any, Dict, List, Tuple, Union
 
-from .table_origin import TableOrigin
-
 
 class QueryData:
     query: str
     database_state: Dict[str, Tuple[List[str], List[Tuple[Any, ...]]]]
 
     table: Union[str, None] = None
-    table_origin: Union[TableOrigin, None] = None
 
     columns: Union[List[str], None] = None
     column_types: Union[List[str], None] = None

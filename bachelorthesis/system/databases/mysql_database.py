@@ -2,7 +2,6 @@ from typing import Any, Dict, List, Tuple
 
 import mysql.connector
 
-from ..data.table_origin import TableOrigin
 from .database import Database
 
 
@@ -14,13 +13,6 @@ class MySQLDatbase(Database):
             host="bachelorthesis_leon_krueger_mysql",
             database="db",
         )
-
-        # All tables used for the internal database management
-        self.internal_tables = {
-            "table_registry": f"""CREATE TABLE IF NOT EXISTS table_registry(
-                name VARCHAR(1023),
-                name_origin ENUM({", ".join([f"'{table_origin.value}'" for table_origin in TableOrigin])}));"""
-        }
 
     def execute_query(
         self, query: str, params: Tuple[str, ...] = ()
@@ -40,9 +32,7 @@ class MySQLDatbase(Database):
     def get_all_tables(self) -> List[str]:
         query = "SHOW TABLES;"
         output = self.execute_query(query)
-        return [
-            table[0] for table in output if table[0] not in self.internal_tables.keys()
-        ]
+        return [table[0] for table in output]
 
     def get_all_columns(self, table_name: str) -> List[Tuple[str, str]]:
         query = f"SHOW COLUMNS FROM {table_name};"
@@ -69,10 +59,6 @@ class MySQLDatbase(Database):
         query = f"CREATE TABLE {table_name} ({', '.join([f'{column[0]} {column[1]}' for column in zip(column_names, column_types)])});"
         self.execute_query(query)
 
-    def create_internal_tables(self) -> None:
-        for query in self.internal_tables.values():
-            self.execute_query(query)
-
     def create_column(
         self, table_name: str, column_name: str, column_type: str
     ) -> None:
@@ -86,10 +72,6 @@ class MySQLDatbase(Database):
     def reset_database(self) -> None:
         for table in self.get_all_tables():
             self.remove_table(table)
-
-        for table in self.internal_tables.keys():
-            query = f"DELETE FROM {table};"
-            self.execute_query(query)
 
     def close(self) -> None:
         self.conn.close()

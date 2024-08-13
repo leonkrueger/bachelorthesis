@@ -2,7 +2,6 @@ from typing import Any, Dict, List, Tuple
 
 from ..create_table_parser import parse_create_table
 from ..data.query_data import QueryData
-from ..data.table_origin import TableOrigin
 from ..insert_query_parser import parse_insert_query
 from .database import Database
 
@@ -18,18 +17,6 @@ class IncorrectQueryException(Exception):
 class PythonDatabase(Database):
     columns: Dict[str, List[Tuple[str, str]]] = {}
     values: Dict[str, List[List[Any]]] = {}
-
-    def __init__(self) -> None:
-        # All tables used for the internal database management
-        enum_values_string = {
-            ", ".join([f"'{table_origin.value}'" for table_origin in TableOrigin])
-        }
-        self.internal_tables = {
-            "table_registry": (
-                ["name", "name_origin"],
-                ["VARCHAR(1023)", f"ENUM({enum_values_string})"],
-            )
-        }
 
     def execute_query(
         self, query: str, params: Tuple[str, ...] = ()
@@ -59,7 +46,6 @@ class PythonDatabase(Database):
         elif query_upper.startswith("CREATE TABLE"):
             table_name, column_names, column_types = parse_create_table(query)
             self.create_table(table_name, column_names, column_types)
-        # TODO: Table manager functions
         else:
             raise QueryNotSupportedException()
 
@@ -67,8 +53,7 @@ class PythonDatabase(Database):
         return [tuple(row) for row in self.values[table_name]]
 
     def get_all_tables(self) -> List[str]:
-        tables = self.columns.keys()
-        return [table for table in tables if table not in self.internal_tables.keys()]
+        return self.columns.keys()
 
     def get_all_columns(self, table_name: str) -> List[Tuple[str, str]]:
         return self.columns[table_name]
@@ -91,10 +76,6 @@ class PythonDatabase(Database):
         self.columns[table_name] = list(zip(column_names, column_types))
         self.values[table_name] = []
 
-    def create_internal_tables(self) -> None:
-        for table, columns in self.internal_tables.items():
-            self.create_table(table, columns[0], columns[1])
-
     def create_column(
         self, table_name: str, column_name: str, column_type: str
     ) -> None:
@@ -109,9 +90,6 @@ class PythonDatabase(Database):
     def reset_database(self) -> None:
         for table in self.get_all_tables():
             self.remove_table(table)
-
-        for table in self.internal_tables.keys():
-            self.values[table] = []
 
     def insert(self, query_data: QueryData) -> None:
         """Inserts the data into the database"""

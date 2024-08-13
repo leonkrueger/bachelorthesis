@@ -12,10 +12,8 @@ from system.strategies.heuristic.heuristic_strategy import HeuristicStrategy
 from system.strategies.heuristic.name_predictor import NamePredictor
 from system.strategies.llama3.llama3_model import Llama3Model
 from system.strategies.openai.openai_strategy import OpenAIStrategy
-from system.table_manager import TableManager
 
 database = PythonDatabase()
-table_manager = TableManager(database)
 
 strategies = {
     "Llama3_finetuned": None,
@@ -135,7 +133,7 @@ def run_experiment(folder: str) -> None:
                 if results_file.read().strip() != "":
                     continue
 
-            insert_query_handler = InsertQueryHandler(database, table_manager, strategy)
+            insert_query_handler = InsertQueryHandler(database, strategy)
 
             with open(inserts_file_path, encoding="utf-8") as input_file:
                 queries = input_file.read().split(";\n")

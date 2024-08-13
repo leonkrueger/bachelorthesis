@@ -4,7 +4,6 @@ from typing import Any, Dict, List, Tuple
 from thefuzz import fuzz, process
 
 from ...data.query_data import QueryData
-from ...data.table_origin import TableOrigin
 from ..strategy import Strategy
 from .name_predictor import NamePredictor
 from .synonym_generator import SynonymGenerator

@@ -34,10 +34,6 @@ class Database:
         """Creates the specified table"""
         raise NotImplementedError()
 
-    def create_internal_tables(self) -> None:
-        """Creates all tables used for internal database management"""
-        raise NotImplementedError()
-
     def create_column(
         self, table_name: str, column_name: str, column_type: str
     ) -> None:

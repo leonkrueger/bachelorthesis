@@ -11,17 +11,15 @@ from system.strategies.heuristic.heuristic_strategy import HeuristicStrategy
 from system.strategies.heuristic.name_predictor import NamePredictor
 from system.strategies.llama3.llama3_model import Llama3Model
 from system.strategies.openai.openai_strategy import OpenAIStrategy
-from system.table_manager import TableManager
 from tabulate import tabulate
 
 database = PythonDatabase()
-table_manager = TableManager(database)
 
 # strategy = HeuristicStrategy()
 # strategy = OpenAIModel(os.getenv("OPENAI_API_KEY"), os.getenv("OPENAI_ORG_ID"))
 strategy = Llama3Model()
 
-insert_query_handler = InsertQueryHandler(database, table_manager, strategy)
+insert_query_handler = InsertQueryHandler(database, strategy)
 
 # Get user input
 user_input = input("Query:\n").strip()
