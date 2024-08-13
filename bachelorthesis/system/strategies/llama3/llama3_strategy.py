@@ -10,11 +10,17 @@ from .llama3_model import Llama3Model
 class Llama3Strategy(Strategy):
     def __init__(
         self,
-        model: Llama3Model,
+        table_prediction_model_dir: str = None,
+        column_mapping_model_dir: str = None,
     ) -> None:
-        self.model = model
+        self.model = Llama3Model()
+        self.table_prediction_model_dir = table_prediction_model_dir
+        self.column_mapping_model_dir = column_mapping_model_dir
 
     def predict_table_name(self, query_data: QueryData) -> str:
+        # Loads the correct adapter for the table prediction task
+        self.model.load_and_set_adapter(self.table_prediction_model_dir)
+
         database_string = (
             "\n".join(
                 [
@@ -52,6 +58,9 @@ class Llama3Strategy(Strategy):
         ).group("table")
 
     def predict_column_mapping(self, query_data: QueryData) -> List[str]:
+        # Loads the correct adapter for the column mapping task
+        self.model.load_and_set_adapter(self.column_mapping_model_dir)
+
         predicted_columns = []
 
         if query_data.table in query_data.database_state.keys():

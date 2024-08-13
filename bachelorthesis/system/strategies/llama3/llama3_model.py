@@ -14,40 +14,25 @@ from ..large_language_model import LargeLanguageModel
 
 
 class Llama3Model(LargeLanguageModel):
-    def __init__(
-        self,
-        fine_tuned_model_dir: str = None,
-    ) -> None:
+    def __init__(self) -> None:
         self.model_name = "meta-llama/Meta-Llama-3-8B-Instruct"
 
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.model_name, token=os.environ["HF_API_TOKEN"]
         )
-        if fine_tuned_model_dir:
-            bnb_config = BitsAndBytesConfig(
-                load_in_4bit=True,
-                bnb_4bit_quant_type="nf4",
-                bnb_4bit_compute_dtype=torch.bfloat16,
-            )
-            base_model = AutoModelForCausalLM.from_pretrained(
-                self.model_name,
-                token=os.environ["HF_API_TOKEN"],
-                quantization_config=bnb_config,
-                device_map="auto",
-            )
-            self.model = PeftModel.from_pretrained(
-                base_model, fine_tuned_model_dir, fine_tuned_model_dir
-            )
-            self.model.set_adapter(fine_tuned_model_dir)
-            self.loaded_peft_model = True
-        else:
-            self.model = AutoModelForCausalLM.from_pretrained(
-                self.model_name,
-                token=os.environ["HF_API_TOKEN"],
-                torch_dtype=torch.bfloat16,
-                device_map="auto",
-            )
-            self.loaded_peft_model = False
+
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=torch.bfloat16,
+        )
+        self.model = AutoModelForCausalLM.from_pretrained(
+            self.model_name,
+            token=os.environ["HF_API_TOKEN"],
+            quantization_config=bnb_config,
+            device_map="auto",
+        )
+        self.loaded_peft_model = False
 
         self.tokenizer.pad_token = self.tokenizer.eos_token
         self.pipe = pipeline(
@@ -85,7 +70,7 @@ class Llama3Model(LargeLanguageModel):
                 and not fine_tuned_model_dir in self.model.peft_config
             ):
                 self.model.add_adapter(fine_tuned_model_dir, fine_tuned_model_dir)
-            else:
+            elif not self.loaded_peft_model:
                 self.model = PeftModel.from_pretrained(
                     self.model, fine_tuned_model_dir, fine_tuned_model_dir
                 )
