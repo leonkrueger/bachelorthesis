@@ -24,14 +24,10 @@ evaluation_folder = os.path.join(
 different_name_already_generated = True
 max_new_tokens = 30
 
-# Depends on if the script is run in Docker or as plain python
-# evaluation_base_folder = os.path.join("/app", "evaluation")
 evaluation_base_folder = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     "..",
-    "..",
-    "evaluation",
-    "bachelorthesis",
+    *os.environ["EVALUATION_BASE_DIR_RELATIVE"].split("/"),
 )
 evaluation_folder = os.path.join(evaluation_base_folder, evaluation_folder)
 

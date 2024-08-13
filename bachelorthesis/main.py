@@ -5,14 +5,12 @@ from system.utils.utils import load_env_variables
 
 load_env_variables()
 
-from system.databases.mysql_database import MySQLDatbase
 from system.databases.python_database import PythonDatabase
 from system.insert_query_handler import InsertQueryHandler
 from system.strategies.heuristic.heuristic_strategy import (
     HeuristicStrategy,
     MatchingAlgorithm,
 )
-from system.strategies.heuristic.name_predictor import NamePredictor
 from system.strategies.heuristic.synonym_generator import WordnetSynonymGenerator
 from system.strategies.llama3.llama3_strategy import Llama3Strategy
 from system.strategies.openai.openai_strategy import OpenAIStrategy

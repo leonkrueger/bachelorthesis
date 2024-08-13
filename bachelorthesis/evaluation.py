@@ -8,40 +8,33 @@ load_env_variables()
 
 from system.databases.python_database import PythonDatabase
 from system.insert_query_handler import InsertQueryHandler
-from system.strategies.heuristic.heuristic_strategy import HeuristicStrategy
-from system.strategies.heuristic.name_predictor import NamePredictor
-from system.strategies.llama3.llama3_model import Llama3Model
+from system.strategies.heuristic.heuristic_strategy import (
+    HeuristicStrategy,
+    MatchingAlgorithm,
+)
+from system.strategies.llama3.llama3_strategy import Llama3Strategy
 from system.strategies.openai.openai_strategy import OpenAIStrategy
 
 database = PythonDatabase()
 
 strategies = {
-    "Llama3_finetuned": None,
-    "Llama3": None,  # Llama3Model(),
-    "GPT4": None,  # OpenAIModel(os.getenv("OPENAI_API_KEY"), os.getenv("OPENAI_ORG_ID")),
-    "Heuristics": None,  # HeuristicStrategy(),
-    "missing_tables_300": None,  # Llama3Model(
-    #     os.path.join(
-    #         os.path.dirname(os.path.realpath(__file__)),
-    #         "fine_tuning",
-    #         "output",
-    #         "missing_tables_300",
-    #     ),
-    # ),
-    "missing_tables_0": Llama3Model(),
+    "Llama3_finetuned": Llama3Strategy(
+        "missing_tables_12000_1_csv", "missing_columns_12000_1_own"
+    ),
+    "Llama3_not_finetuned": Llama3Strategy(),
+    "GPT3_5": OpenAIStrategy(),
+    "Heuristic_exact": HeuristicStrategy(MatchingAlgorithm.EXACT_MATCH),
+    "Heuristic_fuzzy": HeuristicStrategy(MatchingAlgorithm.FUZZY_MATCH),
+    "Heuristic_synonyms": HeuristicStrategy(MatchingAlgorithm.FUZZY_MATCH_SYNONYMS),
 }
 
 # Switch if necessary
 evaluation_folder = "data"
 
-# Depends on if the script is run in Docker or as plain python
-# evaluation_base_folder = os.path.join("/app", "evaluation")
 evaluation_base_folder = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     "..",
-    "..",
-    "evaluation",
-    "bachelorthesis",
+    *os.environ["EVALUATION_BASE_DIR_RELATIVE"].split("/"),
 )
 
 
