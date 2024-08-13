@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Any, Dict, List, Tuple
 
 from thefuzz import fuzz, process
@@ -9,48 +10,67 @@ from .name_predictor import NamePredictor
 from .synonym_generator import SynonymGenerator
 
 
+class MatchingAlgorithm(Enum):
+    EXACT_MATCH = lambda query_name, db_name, synonym_generator: (
+        1 if query_name.lower() == db_name.lower() else 0
+    )
+    FUZZY_MATCH = lambda query_name, db_name, synonym_generator: fuzz.ratio(
+        db_name, query_name
+    )
+    FUZZY_MATCH_SYNONYMS = (
+        lambda query_name, db_name, synonym_generator: process.extract(
+            db_name,
+            synonym_generator.get_synonyms(query_name),
+            scorer=fuzz.ratio,
+            limit=1,
+        )[0]
+    )
+
+
 class HeuristicStrategy(Strategy):
-    MINIMAL_FUZZY_SIMILARITY = 60
+    MINIMAL_SIMILARITY = 60
     MINIMAL_COLUMNS_FOUND_RATIO = 0.5
 
     # Is filled when the table name is predicted and resetted after the last prediction step for a query
     # First value is the name of the table, second is the column mapping
     saved_column_mapping: Tuple[str, Dict[str, str]] = None
 
-    def __init__(self, synonym_generator: SynonymGenerator) -> None:
+    def __init__(
+        self,
+        matching_algorithm: MatchingAlgorithm,
+        synonym_generator: SynonymGenerator = None,
+    ) -> None:
         super().__init__()
 
+        self.matching_algorithm = matching_algorithm
         self.name_predictor = NamePredictor()
         self.synonym_generator = synonym_generator
 
     def predict_table_name(self, query_data: QueryData) -> str:
         if query_data.table:
-            # Generate synonyms for the specified table name
-            synonyms = self.synonym_generator.get_synonyms(query_data.table)
-
             best_score = 0
             best_table = None
 
             # Find a table in the database whose name is close to any found synonym
-            for table in query_data.database_state.keys():
-                match, score = process.extract(
-                    table, synonyms, scorer=fuzz.ratio, limit=1
-                )[0]
+            for db_table in query_data.database_state.keys():
+                score = self.matching_algorithm(
+                    query_data.table, db_table, self.synonym_generator
+                )
 
-                if score >= self.MINIMAL_FUZZY_SIMILARITY and score > best_score:
+                if score >= self.MINIMAL_SIMILARITY and score > best_score:
                     best_score = score
-                    best_table = table
+                    best_table = db_table
 
             if best_table:
                 return best_table
         else:
             # Use the table with the best column mapping if the table was not specified.
             # Only use it, if at least 50% of the columns were mapped to a column of the table.
-            table, column_mapping, column_found_ratio = (
+            db_table, column_mapping, column_found_ratio = (
                 self.get_column_mapping_for_best_table(query_data)
             )
             if column_found_ratio >= self.MINIMAL_COLUMNS_FOUND_RATIO:
-                return table
+                return db_table
 
         # If no match was found, predict a new table name
         return self.name_predictor.predict_table_name(query_data)
@@ -140,16 +160,14 @@ class HeuristicStrategy(Strategy):
 
         # Find all potentially good mappings
         for query_column in query_columns:
-            synonyms = self.synonym_generator.get_synonyms(query_column)
-
             for table_column in table_columns:
-                match, score = process.extract(
-                    table_column, synonyms, scorer=fuzz.ratio, limit=1
-                )[0]
+                score = self.matching_algorithm(
+                    query_column, table_column, self.synonym_generator
+                )
 
                 # If a synonym was found that was close to the name of the column in the database
                 # add it as a potential mapping
-                if score >= self.MINIMAL_FUZZY_SIMILARITY:
+                if score >= self.MINIMAL_SIMILARITY:
                     column_mapping.append((query_column, table_column, score))
 
         # Sort all found mappings descending by the score
