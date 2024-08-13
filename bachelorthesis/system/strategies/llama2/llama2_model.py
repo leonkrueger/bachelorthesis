@@ -90,8 +90,8 @@ class LLama2Model(Strategy):
         database_string = (
             "\n".join(
                 [
-                    f"- Table: {table}, Columns: [{', '.join([column[0] for column in columns])}]"
-                    for table, columns in query_data.database_state.items()
+                    f"- Table: {table}, Columns: [{', '.join([column[0] for column in table_data[0]])}]"
+                    for table, table_data in query_data.database_state.items()
                 ]
             )
             if len(query_data.database_state) > 0

@@ -73,9 +73,15 @@ class PythonDatabase(Database):
     def get_all_columns(self, table_name: str) -> List[Tuple[str, str]]:
         return self.columns[table_name]
 
-    def get_database_state(self) -> Dict[str, List[str]]:
+    def get_example_rows(self, table_name: str) -> List[Tuple[Any, ...]]:
+        return [tuple(row) for row in self.values[table_name][:3]]
+
+    def get_database_state(self) -> Dict[str, Tuple[List[str], List[Tuple[Any, ...]]]]:
         return {
-            table: [column[0] for column in self.get_all_columns(table)]
+            table: (
+                [column[0] for column in self.get_all_columns(table)],
+                self.get_example_rows(table),
+            )
             for table in self.get_all_tables()
         }
 

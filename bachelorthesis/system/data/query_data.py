@@ -1,11 +1,11 @@
-from typing import Dict, List, Union
+from typing import Any, Dict, List, Tuple, Union
 
 from .table_origin import TableOrigin
 
 
 class QueryData:
     query: str
-    database_state: Dict[str, List[str]]
+    database_state: Dict[str, Tuple[List[str], List[Tuple[Any, ...]]]]
 
     table: Union[str, None] = None
     table_origin: Union[TableOrigin, None] = None
@@ -15,7 +15,11 @@ class QueryData:
 
     values: Union[List[List[str]], None] = None
 
-    def __init__(self, query: str, database_state: Dict[str, List[str]]):
+    def __init__(
+        self,
+        query: str,
+        database_state: Dict[str, Tuple[List[str], List[Tuple[Any, ...]]]],
+    ):
         self.query = query
         self.database_state = database_state
 

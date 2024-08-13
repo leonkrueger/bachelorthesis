@@ -50,9 +50,16 @@ class MySQLDatbase(Database):
         cols = [col[0:2] for col in output]
         return cols
 
-    def get_database_state(self) -> Dict[str, List[str]]:
+    def get_example_rows(self, table_name: str) -> List[Tuple[Any, ...]]:
+        query = f"SELECT * FROM {table_name} LIMIT 3;"
+        return self.execute_query(query)
+
+    def get_database_state(self) -> Dict[str, Tuple[List[str], List[Tuple[Any, ...]]]]:
         return {
-            table: [column[0] for column in self.get_all_columns(table)]
+            table: (
+                [column[0] for column in self.get_all_columns(table)],
+                self.get_example_rows(table),
+            )
             for table in self.get_all_tables()
         }
 

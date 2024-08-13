@@ -43,7 +43,7 @@ class InsertQueryHandler:
 
             # Create not-existing columns
             for index, column in enumerate(query_data.columns):
-                if not column in query_data.database_state[query_data.table]:
+                if not column in query_data.database_state[query_data.table][0]:
                     self.table_manager.create_column(
                         query_data.table,
                         column,

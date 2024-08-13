@@ -97,7 +97,7 @@ class HeuristicStrategy(Strategy):
         # If the table exists use its columns for the prediction
         # Else use an empty list as there are no columns in the table yet
         database_columns = (
-            query_data.database_state[query_data.table]
+            query_data.database_state[query_data.table][0]
             if query_data.table in query_data.database_state.keys()
             else []
         )
@@ -132,9 +132,9 @@ class HeuristicStrategy(Strategy):
         best_column_mapping = None
 
         # Computes the table with the best ratio of mapped columns
-        for table, columns in query_data.database_state.items():
+        for table, table_data in query_data.database_state.items():
             column_mapping_for_table = self.get_column_mapping_for_table(
-                query_columns, columns
+                query_columns, table_data[0]
             )
             if (
                 ratio := len(column_mapping_for_table) / len(query_columns)

@@ -20,8 +20,12 @@ class Database:
         """Returns all column names and types of the given table"""
         raise NotImplementedError()
 
-    def get_database_state(self) -> Dict[str, List[str]]:
-        """Returns a dictionary containing all tables and its columns"""
+    def get_example_rows(self, table_name: str) -> List[Tuple[Any, ...]]:
+        """Returns example rows of the given table"""
+        raise NotImplementedError()
+
+    def get_database_state(self) -> Dict[str, Tuple[List[str], List[List[Any]]]]:
+        """Returns a dictionary containing all tables, its columns and example rows"""
         raise NotImplementedError()
 
     def create_table(
