@@ -145,7 +145,7 @@ def get_table_state_str(
     # )
     return f"Table {table_name}:\n" + "\n".join(
         [
-            f"Column {column_name}, Example values: [{', '.join([row[column_index] for row in columns if is_usable_value(row[column_index])])}]"
+            f"Column {column_name}, Example values: [{', '.join([row[column_index] for row in values if is_usable_value(row[column_index])])}]"
             for column_index, column_name in enumerate(columns)
         ]
     )
