@@ -1,3 +1,4 @@
+import logging
 import os
 
 
@@ -15,6 +16,15 @@ def load_env_variables() -> None:
 
             key, value = line.strip().split("=", 1)
             os.environ[key] = value
+
+
+def configure_logger(logging_file: str) -> None:
+    """Configures logger"""
+    logging.basicConfig(
+        filename=logging_file,
+        level=logging.INFO,
+        encoding="utf-8",
+    )
 
 
 def remove_quotes(name: str) -> str:

@@ -26,9 +26,6 @@ evaluation_base_folder = os.path.join(
 )
 evaluation_folder = os.path.join(evaluation_base_folder, evaluation_folder)
 
-errors_file_path = os.path.join(evaluation_base_folder, "errors.txt")
-errors_file = open(errors_file_path, "w", encoding="utf-8")
-
 max_tokens = 30
 
 
@@ -105,6 +102,3 @@ for evaluation_input_file in tqdm(evaluation_input_files):
 
     with open(output_file_path, mode="w", encoding="utf-8") as output_file:
         json.dump(results, output_file)
-
-errors_file.close()
-os.chmod(errors_file_path, 0o777)

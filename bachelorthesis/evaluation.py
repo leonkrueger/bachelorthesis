@@ -1,8 +1,9 @@
 import json
+import logging
 import os
 import traceback
 
-from system.utils.utils import load_env_variables
+from system.utils.utils import configure_logger, load_env_variables
 
 load_env_variables()
 
@@ -40,8 +41,9 @@ evaluation_base_folder = os.path.join(
 
 evaluation_folder = os.path.join(evaluation_base_folder, evaluation_folder)
 
-errors_file_path = os.path.join(evaluation_base_folder, "errors.txt")
-errors_file = open(errors_file_path, "w", encoding="utf-8")
+logging_path = os.path.join(evaluation_base_folder, "logs.txt")
+configure_logger(logging_path)
+logger = logging.getLogger(__name__)
 
 database.reset_database()
 
@@ -62,8 +64,7 @@ def save_results_and_clean_database(results_file_path: str) -> None:
             ]
             results[query] = output
         except Exception as e:
-            print(f"Error while executing query: {query}")
-            errors_file.write(f"Error while executing query: {query}\n")
+            logger.error(f"Error while executing query: {query}\n")
 
     with open(
         results_file_path,
@@ -74,7 +75,6 @@ def save_results_and_clean_database(results_file_path: str) -> None:
     os.chmod(results_file_path, 0o777)
 
     database.reset_database()
-    print(f"Saved results to {results_file_path}.")
 
 
 def run_gold_standard(folder: str) -> None:
@@ -97,8 +97,7 @@ def run_gold_standard(folder: str) -> None:
         try:
             database.execute_query(query)
         except Exception as e:
-            print(f"Error while executing query: {query}")
-            errors_file.write(f"Error {e} while executing query: {query}\n")
+            logger.error(f"Error {e} while executing query: {query}\n")
 
     save_results_and_clean_database(results_file_path)
 
@@ -137,9 +136,11 @@ def run_experiment(folder: str) -> None:
                 try:
                     insert_query_handler.handle_insert_query(query)
                 except Exception as e:
-                    print(f"Error while executing query: {query}")
-                    errors_file.write(f"Error while executing query: {query}\n")
-                    errors_file.write(traceback.format_exc() + "\n\n")
+                    logger.error(
+                        f"Error while executing query: {query}\n"
+                        + traceback.format_exc()
+                        + "\n\n"
+                    )
 
             save_results_and_clean_database(results_file_path)
 
@@ -162,9 +163,6 @@ for path in os.listdir(evaluation_folder):
         continue
 
     run_experiments_for_database(subfolder)
-
-errors_file.close()
-os.chmod(errors_file_path, 0o777)
 
 # Close the database connection
 database.close()
