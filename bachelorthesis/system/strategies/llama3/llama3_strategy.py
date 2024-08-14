@@ -98,24 +98,20 @@ class Llama3Strategy(Strategy):
                     [
                         {
                             "role": "system",
-                            "content": (
-                                "You are an intelligent database that predicts the columns of a SQL-insert. "
-                                "The inserts can contain abbreviated or synonymous column names. The column names can also be missing entirely. "
-                                "Base your guess on the available information. "
-                                "If there is a suitable column in the table answer its name. Else, predict a suitable name for a new column in this table. "
-                                "Answer only with the name of the column. Don't give any explanation for your result."
-                            ),
+                            "content": "You are an intelligent database that predicts the columns of a SQL-insert. "
+                            "The inserts can contain abbreviated or synonymous column names. The column names can also be missing entirely. "
+                            "Base your guess on the available information. "
+                            "If there is a suitable column in the table answer its name. Else, predict a suitable name for a new column in this table. "
+                            "Answer only with the name of the column. Don't give any explanation for your result.",
                         },
                         {
                             "role": "user",
-                            "content": (
-                                "Predict the column for this value:\n"
-                                f"Query: {query_data.get_query(use_quotes=False)}\n"
-                                f"Specified column: {query_column}\n"
-                                f"Value: {query_value}\n"
-                                f"{table_string}\n"
-                                "Column:"
-                            ),
+                            "content": "Predict the column for this value:\n"
+                            f"Query: {query_data.get_query(use_quotes=False)}\n"
+                            f"Specified column: {query_column}\n"
+                            f"Value: {query_value}\n"
+                            f"{table_string}\n"
+                            "Column:",
                         },
                     ],
                 )
@@ -134,7 +130,7 @@ class Llama3Strategy(Strategy):
                     modification += 1
                 predicted_columns.append(modified_prediction)
                 self.logger.info(
-                    f"No column found for column: {query_column}, value: {query_value} in query: {query_data.get_query()}."
+                    f"No fitting db column found for column: {query_column}, value: {query_value} in query: {query_data.get_query()}."
                     f"Used column {modified_prediction} instead."
                 )
 
