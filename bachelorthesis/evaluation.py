@@ -13,6 +13,7 @@ from system.strategies.heuristic.heuristic_strategy import (
     HeuristicStrategy,
     MatchingAlgorithm,
 )
+from system.strategies.heuristic.synonym_generator import WordnetSynonymGenerator
 from system.strategies.llama3.llama3_model import Llama3Model
 from system.strategies.llama3.llama3_strategy import Llama3Strategy
 from system.strategies.openai.openai_strategy import OpenAIStrategy
@@ -30,7 +31,7 @@ strategies = {
     "Heuristic_exact": HeuristicStrategy(MatchingAlgorithm.EXACT_MATCH, llm),
     "Heuristic_fuzzy": HeuristicStrategy(MatchingAlgorithm.FUZZY_MATCH, llm),
     "Heuristic_synonyms": HeuristicStrategy(
-        MatchingAlgorithm.FUZZY_MATCH_SYNONYMS, llm
+        MatchingAlgorithm.FUZZY_MATCH_SYNONYMS, llm, WordnetSynonymGenerator()
     ),
 }
 

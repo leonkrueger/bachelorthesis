@@ -134,7 +134,7 @@ class HeuristicStrategy(Strategy):
 
         best_column_found_ratio = 0.0
         best_table = None
-        best_column_mapping = None
+        best_column_mapping = {}
 
         # Computes the table with the best ratio of mapped columns
         for table, table_data in query_data.database_state.items():
