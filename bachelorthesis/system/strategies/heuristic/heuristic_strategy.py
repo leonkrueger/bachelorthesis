@@ -23,7 +23,7 @@ class MatchingAlgorithm(Enum):
             synonym_generator.get_synonyms(query_name),
             scorer=fuzz.ratio,
             limit=1,
-        )[0]
+        )[0][1]
     )
 
 
@@ -33,7 +33,7 @@ class HeuristicStrategy(Strategy):
 
     # Is filled when the table name is predicted and resetted after the last prediction step for a query
     # First value is the name of the table, second is the column mapping
-    saved_column_mapping: Tuple[str, Dict[str, str]] = None
+    saved_column_mapping: Tuple[str, List[str]] = None
 
     def __init__(
         self,
@@ -64,23 +64,26 @@ class HeuristicStrategy(Strategy):
 
             if best_table:
                 return best_table
+            else:
+                # If no match was found, use the specified identifier
+                return query_data.table
         else:
             # Use the table with the best column mapping if the table was not specified.
-            # Only use it, if at least 50% of the columns were mapped to a column of the table.
-            db_table, column_mapping, column_found_ratio = (
+            # Only use it, if at least f50% of the columns were mapped to a column of the table.
+            db_table, predicted_columns, column_found_ratio = (
                 self.get_column_mapping_for_best_table(query_data)
             )
             if column_found_ratio >= self.MINIMAL_COLUMNS_FOUND_RATIO:
                 return db_table
-
-        # If no match was found, predict a new table name
-        return self.name_predictor.predict_table_name(query_data)
+            else:
+                # If no match was found, predict a new table name
+                return self.name_predictor.predict_table_name(query_data)
 
     def predict_column_mapping(self, query_data: QueryData) -> List[str]:
         # If we already computed the table mapping in the table name prediction step, we use this
         if (
             self.saved_column_mapping
-            and self.saved_column_mapping[0] == query_data.table
+            and self.saved_column_mapping[0] == query_data.query
         ):
             return self.saved_column_mapping[1]
         # Otherwise we reset the variable
@@ -149,13 +152,16 @@ class HeuristicStrategy(Strategy):
                 best_column_mapping = column_mapping_for_table
 
         # Include not mapped columns so that they can be added to the table
-        for column in query_columns:
-            if column not in best_column_mapping.keys():
-                best_column_mapping[column] = column
+        best_predicted_columns = []
+        for query_column in query_columns:
+            if query_column in best_column_mapping.keys():
+                best_predicted_columns.append(best_column_mapping[query_column])
+            else:
+                best_predicted_columns.append(query_column)
 
         # Save the result so that it can be potentially used later
-        self.saved_column_mapping = (best_table, best_column_mapping)
-        return (best_table, best_column_mapping, best_column_found_ratio)
+        self.saved_column_mapping = (query_data.query, best_predicted_columns)
+        return (best_table, best_predicted_columns, best_column_found_ratio)
 
     def get_column_mapping_for_table(
         self, query_columns: list[str], table_columns: list[str]

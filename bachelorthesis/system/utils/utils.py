@@ -29,6 +29,6 @@ def configure_logger(logging_file: str) -> None:
 
 def remove_quotes(name: str) -> str:
     """Removes the quotes from a name, if it has any"""
-    if name.startswith("'") or name.startswith('"'):
+    if name.startswith("'") or name.startswith('"') or name.startswith("`"):
         return name[1:-1]
     return name

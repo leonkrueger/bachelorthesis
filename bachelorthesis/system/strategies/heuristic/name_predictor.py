@@ -23,7 +23,7 @@ class NamePredictor:
             },
         ]
 
-        return remove_quotes(self.model.run_prompt(messages))
+        return remove_quotes(self.model.run_prompt(messages)).replace(" ", "_")
 
     def predict_column_name(self, query_data: QueryData, value: str) -> str:
         """Predicts a suitable column name for a specific value of a query"""
@@ -43,4 +43,4 @@ class NamePredictor:
             },
         ]
 
-        return remove_quotes(self.model.run_prompt(messages))
+        return remove_quotes(self.model.run_prompt(messages)).replace(" ", "_")

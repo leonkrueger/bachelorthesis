@@ -7,11 +7,13 @@ from .database import Database
 
 
 class QueryNotSupportedException(Exception):
-    pass
+    def __init__(self, query: str):
+        self.query = query
 
 
 class IncorrectQueryException(Exception):
-    pass
+    def __init__(self, query: str):
+        self.query = query
 
 
 class PythonDatabase(Database):
@@ -27,19 +29,19 @@ class PythonDatabase(Database):
             parse_insert_query(query_data)
 
             if not query_data.table:
-                raise IncorrectQueryException()
+                raise IncorrectQueryException(query)
 
             if not query_data.columns and len(query_data.values[0]) != len(
                 self.columns[query_data.table]
             ):
-                raise IncorrectQueryException()
+                raise IncorrectQueryException(query)
             elif not query_data.columns:
                 query_data.columns = [
                     column[0] for column in self.get_all_columns(query_data.table)
                 ]
 
             if any([len(row) != len(query_data.columns) for row in query_data.values]):
-                raise IncorrectQueryException()
+                raise IncorrectQueryException(query)
 
             self.insert(query_data)
 
@@ -47,7 +49,7 @@ class PythonDatabase(Database):
             table_name, column_names, column_types = parse_create_table(query)
             self.create_table(table_name, column_names, column_types)
         else:
-            raise QueryNotSupportedException()
+            raise QueryNotSupportedException(query)
 
     def select_all_data(self, table_name: str) -> List[Tuple[Any, ...]]:
         return [tuple(row) for row in self.values[table_name]]
@@ -105,7 +107,7 @@ class PythonDatabase(Database):
                     if column[0] == query_column
                 ]
                 if len(column_index) != 1:
-                    raise IncorrectQueryException()
+                    raise IncorrectQueryException(query_data)
 
                 database_row[column_index[0]] = (
                     None
