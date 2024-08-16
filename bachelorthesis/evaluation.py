@@ -23,13 +23,15 @@ llm = Llama3Model()
 
 strategies = {
     # "Llama3_finetuned": Llama3Strategy(
-    #     "missing_tables_12000_1_csv", "missing_columns_12000_1_own"
+    #     llm, "missing_tables_12000_1_csv", "missing_columns_12000_1_own"
     # ),
-    # "Llama3_not_finetuned": Llama3Strategy(),
+    # "Llama3_not_finetuned": Llama3Strategy(llm),
     # "GPT3_5": OpenAIStrategy(),
     "Heuristic_exact": HeuristicStrategy(MatchingAlgorithm.EXACT_MATCH, llm),
     "Heuristic_fuzzy": HeuristicStrategy(MatchingAlgorithm.FUZZY_MATCH, llm),
-    "Heuristic_synonyms": HeuristicStrategy(MatchingAlgorithm.FUZZY_MATCH_SYNONYMS, llm),
+    "Heuristic_synonyms": HeuristicStrategy(
+        MatchingAlgorithm.FUZZY_MATCH_SYNONYMS, llm
+    ),
 }
 
 # Switch if necessary
@@ -44,7 +46,9 @@ evaluation_base_folder = os.path.join(
 
 evaluation_folder = os.path.join(evaluation_base_folder, evaluation_folder)
 
-logging_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "logs.txt")
+logging_path = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)), "..", "logs.txt"
+)
 configure_logger(logging_path)
 logger = logging.getLogger(__name__)
 

@@ -88,8 +88,8 @@ class PythonDatabase(Database):
         del self.values[table_name]
 
     def reset_database(self) -> None:
-        for table in self.get_all_tables():
-            self.remove_table(table)
+        self.columns = {}
+        self.values = {}
 
     def insert(self, query_data: QueryData) -> None:
         """Inserts the data into the database"""

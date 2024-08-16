@@ -11,11 +11,12 @@ from .llama3_model import Llama3Model
 class Llama3Strategy(Strategy):
     def __init__(
         self,
+        model: Llama3Model,
         table_prediction_model_dir: str = None,
         column_mapping_model_dir: str = None,
         max_column_mapping_retries: int = 5,
     ) -> None:
-        self.model = Llama3Model()
+        self.model = model
         self.logger = logging.getLogger(__name__)
 
         self.table_prediction_model_dir = table_prediction_model_dir
