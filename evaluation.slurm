@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --cpus-per-gpu 10  # important settings
+#SBATCH --cpus-per-gpu 2  # important settings
 #SBATCH --gpus=1
 #SBATCH -e slurm/output/slurm-%j.err  # files for stderr / stdout
 #SBATCH -o slurm/output/slurm-%j.out
@@ -13,6 +13,6 @@ source venv/bin/activate
 # nvidia-smi  # test if it works
 # python -c "import torch; print(torch.cuda.device_count())"
 
-python3 bachelorthesis/evaluate_column_prompt_output.py  # run your stuff
+python3 bachelorthesis/evaluation.py  # run your stuff
 
 deactivate

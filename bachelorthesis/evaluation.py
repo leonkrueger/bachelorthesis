@@ -13,20 +13,23 @@ from system.strategies.heuristic.heuristic_strategy import (
     HeuristicStrategy,
     MatchingAlgorithm,
 )
+from system.strategies.llama3.llama3_model import Llama3Model
 from system.strategies.llama3.llama3_strategy import Llama3Strategy
 from system.strategies.openai.openai_strategy import OpenAIStrategy
 
 database = PythonDatabase()
 
+llm = Llama3Model()
+
 strategies = {
-    "Llama3_finetuned": Llama3Strategy(
-        "missing_tables_12000_1_csv", "missing_columns_12000_1_own"
-    ),
-    "Llama3_not_finetuned": Llama3Strategy(),
-    "GPT3_5": OpenAIStrategy(),
-    "Heuristic_exact": HeuristicStrategy(MatchingAlgorithm.EXACT_MATCH),
-    "Heuristic_fuzzy": HeuristicStrategy(MatchingAlgorithm.FUZZY_MATCH),
-    "Heuristic_synonyms": HeuristicStrategy(MatchingAlgorithm.FUZZY_MATCH_SYNONYMS),
+    # "Llama3_finetuned": Llama3Strategy(
+    #     "missing_tables_12000_1_csv", "missing_columns_12000_1_own"
+    # ),
+    # "Llama3_not_finetuned": Llama3Strategy(),
+    # "GPT3_5": OpenAIStrategy(),
+    "Heuristic_exact": HeuristicStrategy(MatchingAlgorithm.EXACT_MATCH, llm),
+    "Heuristic_fuzzy": HeuristicStrategy(MatchingAlgorithm.FUZZY_MATCH, llm),
+    "Heuristic_synonyms": HeuristicStrategy(MatchingAlgorithm.FUZZY_MATCH_SYNONYMS, llm),
 }
 
 # Switch if necessary
@@ -41,7 +44,7 @@ evaluation_base_folder = os.path.join(
 
 evaluation_folder = os.path.join(evaluation_base_folder, evaluation_folder)
 
-logging_path = os.path.join(evaluation_base_folder, "logs.txt")
+logging_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "logs.txt")
 configure_logger(logging_path)
 logger = logging.getLogger(__name__)
 
@@ -100,6 +103,7 @@ def run_gold_standard(folder: str) -> None:
             logger.error(f"Error {e} while executing query: {query}\n")
 
     save_results_and_clean_database(results_file_path)
+    logger.info(f"Gold Standard executed: {folder}")
 
 
 def run_experiment(folder: str) -> None:
@@ -143,6 +147,7 @@ def run_experiment(folder: str) -> None:
                     )
 
             save_results_and_clean_database(results_file_path)
+            logger.info(f"Experiment executed: {results_file_path}")
 
 
 def run_experiments_for_database(folder: str) -> None:

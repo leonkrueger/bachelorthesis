@@ -11,3 +11,4 @@ datasets
 wandb
 nltk
 thefuzz
+tiktoken

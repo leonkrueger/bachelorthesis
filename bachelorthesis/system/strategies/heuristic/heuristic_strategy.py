@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Tuple
 from thefuzz import fuzz, process
 
 from ...data.query_data import QueryData
+from ..large_language_model import LargeLanguageModel
 from ..strategy import Strategy
 from .name_predictor import NamePredictor
 from .synonym_generator import SynonymGenerator
@@ -37,12 +38,13 @@ class HeuristicStrategy(Strategy):
     def __init__(
         self,
         matching_algorithm: MatchingAlgorithm,
+        llm: LargeLanguageModel,
         synonym_generator: SynonymGenerator = None,
     ) -> None:
         super().__init__()
 
         self.matching_algorithm = matching_algorithm
-        self.name_predictor = NamePredictor()
+        self.name_predictor = NamePredictor(llm)
         self.synonym_generator = synonym_generator
 
     def predict_table_name(self, query_data: QueryData) -> str:
@@ -178,7 +180,7 @@ class HeuristicStrategy(Strategy):
 
         # Filter all found mappings, so that no columns in the query or database occur more than once
         # Required as we only allow 1:1 mappings of columns
-        filtered_column_mapping = []
+        filtered_column_mapping = {}
         seen_query_columns = set()
         seen_table_columns = set()
 
@@ -187,7 +189,7 @@ class HeuristicStrategy(Strategy):
                 match[0] not in seen_query_columns
                 and match[1] not in seen_table_columns
             ):
-                filtered_column_mapping.append(match)
+                filtered_column_mapping[match[0]] = match[1]
                 seen_query_columns.add(match[0])
                 seen_table_columns.add(match[1])
 
