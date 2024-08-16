@@ -7,9 +7,20 @@ from .data.query_data import QueryData
 
 
 class UnexpectedTokenException(Exception):
-    def __init__(self, expected_token: str, actual_token: str) -> None:
+    def __init__(
+        self, expected_token: str, actual_token: str, context: List[str]
+    ) -> None:
         self.expected_token = expected_token
         self.actual_token = actual_token
+        self.context = context
+
+
+def unexpected_token_encountered(
+    tokens: List[str], expected_token: str, index: int
+) -> None:
+    raise UnexpectedTokenException(
+        expected_token, tokens[index], tokens[index - 2 : index + 3]
+    )
 
 
 def parse_insert_query(query_data: QueryData) -> QueryData:
@@ -26,9 +37,9 @@ def parse_insert_query(query_data: QueryData) -> QueryData:
         if token.string.strip() != ""
     ]
     if tokens[0].upper() != "INSERT":
-        raise UnexpectedTokenException("INSERT", tokens[0])
+        unexpected_token_encountered(tokens, "INSERT", 0)
     if tokens[1].upper() != "INTO":
-        raise UnexpectedTokenException("INTO", tokens[1])
+        unexpected_token_encountered(tokens, "INTO", 1)
 
     index = 2
     if tokens[index].upper() != "VALUES" and tokens[index] != "(":
@@ -36,11 +47,11 @@ def parse_insert_query(query_data: QueryData) -> QueryData:
     if tokens[index] == "(":
         query_data.columns, index = parse_columns(tokens, index)
     if tokens[index].upper() != "VALUES":
-        raise UnexpectedTokenException("VALUES", tokens[index])
+        unexpected_token_encountered(tokens, "VALUES", index)
     query_data.values, query_data.column_types, index = parse_values(tokens, index + 1)
 
     if index < len(tokens) and tokens[index] != ";" and "".join(tokens[index:]) != "":
-        raise UnexpectedTokenException(";", tokens[index])
+        unexpected_token_encountered(tokens, ";", index)
 
     # All tokens after the ';' are ignored
 
@@ -53,7 +64,7 @@ def parse_table(tokens: List[str], index: int) -> Tuple[str, int]:
 
 def parse_columns(tokens: List[str], index: int) -> Tuple[List[str], int]:
     if tokens[index] != "(":
-        raise UnexpectedTokenException("(", tokens[index])
+        unexpected_token_encountered(tokens, "(", index)
 
     columns = []
     column, index = parse_identifier(tokens, index + 1)
@@ -77,7 +88,9 @@ def parse_identifier(tokens: List[str], index: int) -> Tuple[str, int]:
 
     identifier = tokens[index]
     index += 1
-    while tokens[index].upper() != "VALUES" and re.match(r"[A-Za-z0-9_$]+", tokens[index]):
+    while tokens[index].upper() != "VALUES" and re.match(
+        r"[A-Za-z0-9_$]+", tokens[index]
+    ):
         identifier += tokens[index]
         index += 1
     return (identifier, index)
@@ -101,7 +114,7 @@ def parse_values_for_row(
     tokens: List[str], index: int
 ) -> Tuple[List[str], List[str], int]:
     if tokens[index] != "(":
-        raise UnexpectedTokenException("(", tokens[index])
+        unexpected_token_encountered(tokens, "(", index)
 
     values, column_types = [], []
 
@@ -115,7 +128,7 @@ def parse_values_for_row(
         column_types.append(column_type)
 
     if tokens[index] != ")":
-        raise UnexpectedTokenException(")", tokens[index])
+        unexpected_token_encountered(tokens, ")", index)
 
     return (values, column_types, index + 1)
 
@@ -148,7 +161,7 @@ def parse_replace_function(tokens: List[str], index: int) -> Tuple[str, int]:
         value, index = parse_replace_function_helper(tokens, index + 1, 1)
         return ("(" + value, index)
     else:
-        raise UnexpectedTokenException("(", tokens[index])
+        unexpected_token_encountered(tokens, "(", index)
 
 
 def parse_replace_function_helper(
