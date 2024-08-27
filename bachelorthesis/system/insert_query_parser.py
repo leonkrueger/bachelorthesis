@@ -1,6 +1,7 @@
 import io
 import re
 import tokenize
+import logging
 from typing import List, Tuple
 
 from .data.query_data import QueryData
@@ -8,10 +9,11 @@ from .data.query_data import QueryData
 
 class UnexpectedTokenException(Exception):
     def __init__(
-        self, expected_token: str, actual_token: str, context: List[str]
+        self, expected_token: str, actual_token: str, tokens: List[str], context: List[str]
     ) -> None:
         self.expected_token = expected_token
         self.actual_token = actual_token
+        self.tokens = tokens
         self.context = context
 
 
@@ -19,7 +21,7 @@ def unexpected_token_encountered(
     tokens: List[str], expected_token: str, index: int
 ) -> None:
     raise UnexpectedTokenException(
-        expected_token, tokens[index], tokens[index - 2 : index + 3]
+        expected_token, tokens[index], tokens, tokens[index - 2 : index + 3]
     )
 
 
@@ -31,11 +33,16 @@ def parse_insert_query(query_data: QueryData) -> QueryData:
     # INSERT INTO Cities VALUES ("Paris", "France"), ("Berlin", "Germany");
     # INSERT INTO (Name, Country) VALUES ("Paris", "France");
     # INSERT INTO VALUES ("Paris", "France");
-    tokens = [
-        token.string
-        for token in tokenize.generate_tokens(io.StringIO(query_data.query).readline)
-        if token.string.strip() != ""
-    ]
+    try:
+        tokens = [
+            token.string
+            for token in tokenize.generate_tokens(io.StringIO(query_data.query).readline)
+            if token.string.strip() != ""
+        ]
+    except Exception as e:
+        logging.getLogger(__name__).error("Could not parse query: " + query_data.query)
+        raise e
+
     if tokens[0].upper() != "INSERT":
         unexpected_token_encountered(tokens, "INSERT", 0)
     if tokens[1].upper() != "INTO":

@@ -28,8 +28,8 @@ class OpenAIStrategy(Strategy):
                 [
                     f"Table {table}:\n"
                     f"{';'.join([column for column in table_data[0]])}\n"
-                    "\n".join([";".join(row) for row in table_data[1]])
-                    for table, table_data in query_data.database_state
+                    "\n".join([";".join([str(value) for value in row]) for row in table_data[1]])
+                    for table, table_data in query_data.database_state.items()
                 ]
             )
             if len(query_data.database_state) > 0
@@ -84,7 +84,7 @@ class OpenAIStrategy(Strategy):
     ) -> Dict[str, Any]:
         table_string = f"Table {query_data.table}:\n" + "\n".join(
             [
-                f"Column {db_column}, Example values: [{', '.join([row[db_column_index] for row in db_values if row[db_column_index] is not None])}]"
+                f"Column {db_column}, Example values: [{', '.join([str(row[db_column_index]) for row in db_values if row[db_column_index] is not None])}]"
                 for db_column_index, db_column in enumerate(db_columns)
             ]
         )

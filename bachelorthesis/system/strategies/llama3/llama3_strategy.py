@@ -11,29 +11,24 @@ from .llama3_model import Llama3Model
 class Llama3Strategy(Strategy):
     def __init__(
         self,
-        model: Llama3Model,
         table_prediction_model_dir: str = None,
         column_mapping_model_dir: str = None,
         max_column_mapping_retries: int = 5,
     ) -> None:
-        self.model = model
+        self.table_prediction_model = Llama3Model(table_prediction_model_dir)
+        self.column_mapping_model = Llama3Model(column_mapping_model_dir)
         self.logger = logging.getLogger(__name__)
 
-        self.table_prediction_model_dir = table_prediction_model_dir
-        self.column_mapping_model_dir = column_mapping_model_dir
         self.max_column_mapping_retries = max_column_mapping_retries
 
     def predict_table_name(self, query_data: QueryData) -> str:
-        # Loads the correct adapter for the table prediction task
-        self.model.load_and_set_adapter(self.table_prediction_model_dir)
-
         database_string = (
             "\n".join(
                 [
                     f"Table {table}:\n"
                     f"{';'.join([column for column in table_data[0]])}\n"
-                    "\n".join([";".join(row) for row in table_data[1]])
-                    for table, table_data in query_data.database_state
+                    "\n".join([";".join([str(value) for value in row]) for row in table_data[1]])
+                    for table, table_data in query_data.database_state.items()
                 ]
             )
             if len(query_data.database_state) > 0
@@ -42,7 +37,7 @@ class Llama3Strategy(Strategy):
 
         return re.search(
             r"(?P<table>\S+)",
-            self.model.run_prompt(
+            self.table_prediction_model.run_prompt(
                 [
                     {
                         "role": "system",
@@ -64,9 +59,6 @@ class Llama3Strategy(Strategy):
         ).group("table")
 
     def predict_column_mapping(self, query_data: QueryData) -> List[str]:
-        # Loads the correct adapter for the column mapping task
-        self.model.load_and_set_adapter(self.column_mapping_model_dir)
-
         predicted_columns = []
 
         if query_data.table in query_data.database_state.keys():
@@ -79,7 +71,7 @@ class Llama3Strategy(Strategy):
         for index, query_value in enumerate(query_data.values[0]):
             table_string = f"Table {query_data.table}:\n" + "\n".join(
                 [
-                    f"Column {db_column}, Example values: [{', '.join([row[db_column_index] for row in db_values if row[db_column_index] is not None])}]"
+                    f"Column {db_column}, Example values: [{', '.join([str(row[db_column_index]) for row in db_values if row[db_column_index] is not None])}]"
                     for db_column_index, db_column in enumerate(db_columns)
                 ]
             )
@@ -95,27 +87,30 @@ class Llama3Strategy(Strategy):
             # If not one generated name fits, the last prediction is used and an integer is added to its end
             was_added = False
             for i in range(self.max_column_mapping_retries):
-                prediction = self.model.run_prompt(
-                    [
-                        {
-                            "role": "system",
-                            "content": "You are an intelligent database that predicts the columns of a SQL-insert. "
-                            "The inserts can contain abbreviated or synonymous column names. The column names can also be missing entirely. "
-                            "Base your guess on the available information. "
-                            "If there is a suitable column in the table answer its name. Else, predict a suitable name for a new column in this table. "
-                            "Answer only with the name of the column. Don't give any explanation for your result.",
-                        },
-                        {
-                            "role": "user",
-                            "content": "Predict the column for this value:\n"
-                            f"Query: {query_data.get_query(use_quotes=False)}\n"
-                            f"Specified column: {query_column}\n"
-                            f"Value: {query_value}\n"
-                            f"{table_string}\n"
-                            "Column:",
-                        },
-                    ],
-                )
+                prediction = re.search(
+                    r"(?P<column>\S+)",
+                    self.column_mapping_model.run_prompt(
+                        [
+                            {
+                                "role": "system",
+                                "content": "You are an intelligent database that predicts the columns of a SQL-insert. "
+                                "The inserts can contain abbreviated or synonymous column names. The column names can also be missing entirely. "
+                                "Base your guess on the available information. "
+                                "If there is a suitable column in the table answer its name. Else, predict a suitable name for a new column in this table. "
+                                "Answer only with the name of the column. Don't give any explanation for your result.",
+                            },
+                            {
+                                "role": "user",
+                                "content": "Predict the column for this value:\n"
+                                f"Query: {query_data.get_query(use_quotes=False)}\n"
+                                f"Specified column: {query_column}\n"
+                                f"Value: {query_value}\n"
+                                f"{table_string}\n"
+                                "Column:",
+                            },
+                        ],
+                    ),
+                ).group("column")
 
                 if prediction not in predicted_columns:
                     predicted_columns.append(prediction)
@@ -126,7 +121,7 @@ class Llama3Strategy(Strategy):
             if not was_added:
                 modification = 1
                 while (
-                    modified_prediction := prediction + modification
+                    modified_prediction := prediction + str(modification)
                 ) in predicted_columns:
                     modification += 1
                 predicted_columns.append(modified_prediction)

@@ -15,6 +15,11 @@ class IncorrectQueryException(Exception):
     def __init__(self, query: str):
         self.query = query
 
+class QueryDoesNotFitDatabaseException(Exception):
+    def __init__(self, query: str, database_columns: List[str]):
+        self.query = query
+        self.database_columns = database_columns
+
 
 class PythonDatabase(Database):
     columns: Dict[str, List[Tuple[str, str]]] = {}
@@ -48,6 +53,14 @@ class PythonDatabase(Database):
         elif query_upper.startswith("CREATE TABLE"):
             table_name, column_names, column_types = parse_create_table(query)
             self.create_table(table_name, column_names, column_types)
+        elif query_upper.startswith("SHOW TABLES"):
+            return [self.get_all_tables()]
+        elif query_upper.startswith("SHOW COLUMNS FROM"):
+            table_name = query[18:-1] if query.endswith(";") else query[18:]
+            return self.get_all_columns(table_name)
+        elif query_upper.startswith("SELECT * FROM"):
+            table_name = query[14:-1] if query.endswith(";") else query[14:]
+            return self.select_all_data(table_name)
         else:
             raise QueryNotSupportedException(query)
 
@@ -107,7 +120,10 @@ class PythonDatabase(Database):
                     if column[0] == query_column
                 ]
                 if len(column_index) != 1:
-                    raise IncorrectQueryException(query_data)
+                    raise QueryDoesNotFitDatabaseException(
+                        query_data.query,
+                        self.columns[query_data.table]
+                    )
 
                 database_row[column_index[0]] = (
                     None

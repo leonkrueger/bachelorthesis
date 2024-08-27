@@ -5,6 +5,7 @@ from thefuzz import fuzz, process
 
 from ...data.query_data import QueryData
 from ..large_language_model import LargeLanguageModel
+from ..llama3.llama3_model import Llama3Model
 from ..strategy import Strategy
 from .name_predictor import NamePredictor
 from .synonym_generator import SynonymGenerator
@@ -38,13 +39,12 @@ class HeuristicStrategy(Strategy):
     def __init__(
         self,
         matching_algorithm: MatchingAlgorithm,
-        llm: LargeLanguageModel,
         synonym_generator: SynonymGenerator = None,
     ) -> None:
         super().__init__()
 
         self.matching_algorithm = matching_algorithm
-        self.name_predictor = NamePredictor(llm)
+        self.name_predictor = NamePredictor(Llama3Model())
         self.synonym_generator = synonym_generator
 
     def predict_table_name(self, query_data: QueryData) -> str:

@@ -1,7 +1,7 @@
 import sys
 import traceback
 
-from system.utils.utils import load_env_variables
+from system.utils.utils import get_finetuned_model_dir, load_env_variables
 
 load_env_variables()
 
@@ -29,7 +29,8 @@ match strategy_argument:
         )
     case "llama3_finetuned":
         strategy = Llama3Strategy(
-            "missing_tables_12000_1_csv", "missing_columns_12000_1_own"
+            get_finetuned_model_dir("missing_tables_12000_1_csv"),
+            get_finetuned_model_dir("missing_columns_12000_1_own"),
         )
     case "llama3_not_finetuned":
         strategy = Llama3Strategy()

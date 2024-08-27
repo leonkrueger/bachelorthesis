@@ -3,7 +3,8 @@ import logging
 import os
 import traceback
 
-from system.utils.utils import configure_logger, load_env_variables
+from system.utils.utils import configure_logger, get_finetuned_model_dir, load_env_variables
+from tqdm import tqdm
 
 load_env_variables()
 
@@ -14,25 +15,24 @@ from system.strategies.heuristic.heuristic_strategy import (
     MatchingAlgorithm,
 )
 from system.strategies.heuristic.synonym_generator import WordnetSynonymGenerator
-from system.strategies.llama3.llama3_model import Llama3Model
 from system.strategies.llama3.llama3_strategy import Llama3Strategy
 from system.strategies.openai.openai_strategy import OpenAIStrategy
 
 database = PythonDatabase()
 
-llm = Llama3Model()
-
 strategies = {
-    # "Llama3_finetuned": Llama3Strategy(
-    #     llm, "missing_tables_12000_1_csv", "missing_columns_12000_1_own"
-    # ),
-    # "Llama3_not_finetuned": Llama3Strategy(llm),
-    # "GPT3_5": OpenAIStrategy(),
-    "Heuristic_exact": HeuristicStrategy(MatchingAlgorithm.EXACT_MATCH, llm),
-    "Heuristic_fuzzy": HeuristicStrategy(MatchingAlgorithm.FUZZY_MATCH, llm),
-    "Heuristic_synonyms": HeuristicStrategy(
-        MatchingAlgorithm.FUZZY_MATCH_SYNONYMS, llm, WordnetSynonymGenerator()
+    "Llama3_finetuned": Llama3Strategy(
+        get_finetuned_model_dir("missing_tables_12000_1_csv"),
+        get_finetuned_model_dir("missing_columns_12000_1_own"),
+        2,
     ),
+    # "Llama3_not_finetuned": Llama3Strategy(max_column_mapping_retries=2),
+    # "GPT3_5": OpenAIStrategy(),
+    # "Heuristic_exact": HeuristicStrategy(MatchingAlgorithm.EXACT_MATCH),
+    # "Heuristic_fuzzy": HeuristicStrategy(MatchingAlgorithm.FUZZY_MATCH),
+    # "Heuristic_synonyms": HeuristicStrategy(
+    #     MatchingAlgorithm.FUZZY_MATCH_SYNONYMS, WordnetSynonymGenerator()
+    # ),
 }
 
 # Switch if necessary
@@ -48,7 +48,7 @@ evaluation_base_folder = os.path.join(
 evaluation_folder = os.path.join(evaluation_base_folder, evaluation_folder)
 
 logging_path = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)), "..", "logs.txt"
+    os.path.dirname(os.path.realpath(__file__)), "..", "logs_finetuned.txt"
 )
 configure_logger(logging_path)
 logger = logging.getLogger(__name__)
@@ -138,7 +138,7 @@ def run_experiment(folder: str) -> None:
 
             with open(inserts_file_path, encoding="utf-8") as input_file:
                 queries = input_file.read().split(";\n")
-            for query in queries:
+            for query in tqdm(queries):
                 query = query.strip()
                 if query == "":
                     continue

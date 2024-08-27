@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --cpus-per-gpu 2  # important settings
-#SBATCH --gpus=1
+#SBATCH --gpus=2
 #SBATCH -e slurm/output/slurm-%j.err  # files for stderr / stdout
 #SBATCH -o slurm/output/slurm-%j.out
 

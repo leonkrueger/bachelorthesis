@@ -1,5 +1,6 @@
 import logging
 import os
+from pathlib import Path
 
 
 def load_env_variables() -> None:
@@ -24,6 +25,15 @@ def configure_logger(logging_file: str) -> None:
         filename=logging_file,
         level=logging.INFO,
         encoding="utf-8",
+    )
+
+def get_finetuned_model_dir(name: str) -> str:
+    """Returns the path of the finetuned model in this project"""
+    return os.path.join(
+        Path(os.path.realpath(__file__)).parent.parent.parent,
+        "fine_tuning",
+        "output",
+        name,
     )
 
 
