@@ -13,7 +13,7 @@ from .synonym_generator import SynonymGenerator
 
 class MatchingAlgorithm(Enum):
     EXACT_MATCH = lambda query_name, db_name, synonym_generator: (
-        1 if query_name.lower() == db_name.lower() else 0
+        100 if query_name.lower() == db_name.lower() else 0
     )
     FUZZY_MATCH = lambda query_name, db_name, synonym_generator: fuzz.ratio(
         db_name, query_name
