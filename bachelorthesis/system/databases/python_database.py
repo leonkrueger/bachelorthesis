@@ -15,6 +15,7 @@ class IncorrectQueryException(Exception):
     def __init__(self, query: str):
         self.query = query
 
+
 class QueryDoesNotFitDatabaseException(Exception):
     def __init__(self, query: str, database_columns: List[str]):
         self.query = query
@@ -121,8 +122,7 @@ class PythonDatabase(Database):
                 ]
                 if len(column_index) != 1:
                     raise QueryDoesNotFitDatabaseException(
-                        query_data.query,
-                        self.columns[query_data.table]
+                        query_data.query, self.columns[query_data.table]
                     )
 
                 database_row[column_index[0]] = (

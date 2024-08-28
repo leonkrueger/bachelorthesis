@@ -1,7 +1,7 @@
 import io
+import logging
 import re
 import tokenize
-import logging
 from typing import List, Tuple
 
 from .data.query_data import QueryData
@@ -9,7 +9,11 @@ from .data.query_data import QueryData
 
 class UnexpectedTokenException(Exception):
     def __init__(
-        self, expected_token: str, actual_token: str, tokens: List[str], context: List[str]
+        self,
+        expected_token: str,
+        actual_token: str,
+        tokens: List[str],
+        context: List[str],
     ) -> None:
         self.expected_token = expected_token
         self.actual_token = actual_token
@@ -36,7 +40,9 @@ def parse_insert_query(query_data: QueryData) -> QueryData:
     try:
         tokens = [
             token.string
-            for token in tokenize.generate_tokens(io.StringIO(query_data.query).readline)
+            for token in tokenize.generate_tokens(
+                io.StringIO(query_data.query).readline
+            )
             if token.string.strip() != ""
         ]
     except Exception as e:

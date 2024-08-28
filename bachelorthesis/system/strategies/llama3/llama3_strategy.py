@@ -27,7 +27,12 @@ class Llama3Strategy(Strategy):
                 [
                     f"Table {table}:\n"
                     f"{';'.join([column for column in table_data[0]])}\n"
-                    "\n".join([";".join([str(value) for value in row]) for row in table_data[1]])
+                    "\n".join(
+                        [
+                            ";".join([str(value) for value in row])
+                            for row in table_data[1]
+                        ]
+                    )
                     for table, table_data in query_data.database_state.items()
                 ]
             )

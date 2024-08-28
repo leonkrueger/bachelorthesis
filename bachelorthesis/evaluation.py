@@ -3,7 +3,11 @@ import logging
 import os
 import traceback
 
-from system.utils.utils import configure_logger, get_finetuned_model_dir, load_env_variables
+from system.utils.utils import (
+    configure_logger,
+    get_finetuned_model_dir,
+    load_env_variables,
+)
 from tqdm import tqdm
 
 load_env_variables()
@@ -21,13 +25,15 @@ from system.strategies.openai.openai_strategy import OpenAIStrategy
 database = PythonDatabase()
 
 strategies = {
-    "Llama3_finetuned": Llama3Strategy(
-        get_finetuned_model_dir("missing_tables_12000_1_csv"),
-        get_finetuned_model_dir("missing_columns_12000_1_own"),
-        2,
-    ),
+    # "Llama3_finetuned": Llama3Strategy(
+    #     get_finetuned_model_dir("missing_tables_12000_1_csv"),
+    #     get_finetuned_model_dir("missing_columns_12000_1_own"),
+    #     2,
+    # ),
     # "Llama3_not_finetuned": Llama3Strategy(max_column_mapping_retries=2),
-    # "GPT3_5": OpenAIStrategy(),
+    "GPT3_5": OpenAIStrategy(max_column_mapping_retries=1),
+    "GPT4o": OpenAIStrategy("gpt-4o", 1),
+    "GPT4o_mini": OpenAIStrategy("gpt-4o-mini", 1),
     # "Heuristic_exact": HeuristicStrategy(MatchingAlgorithm.EXACT_MATCH),
     # "Heuristic_fuzzy": HeuristicStrategy(MatchingAlgorithm.FUZZY_MATCH),
     # "Heuristic_synonyms": HeuristicStrategy(
