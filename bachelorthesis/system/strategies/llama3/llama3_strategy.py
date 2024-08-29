@@ -16,7 +16,11 @@ class Llama3Strategy(Strategy):
         max_column_mapping_retries: int = 5,
     ) -> None:
         self.table_prediction_model = Llama3Model(table_prediction_model_dir)
-        self.column_mapping_model = Llama3Model(column_mapping_model_dir)
+        self.column_mapping_model = (
+            self.table_prediction_model 
+            if table_prediction_model_dir == column_mapping_model_dir 
+            else Llama3Model(column_mapping_model_dir
+        )
         self.logger = logging.getLogger(__name__)
 
         self.max_column_mapping_retries = max_column_mapping_retries
