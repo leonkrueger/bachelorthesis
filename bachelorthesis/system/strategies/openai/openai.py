@@ -95,7 +95,7 @@ _openai_model_parameters = {
         "max_context": 128_000,
         "max_output_tokens": 4_096,
     },
-    "gpt-4o": {
+    "gpt-4o-2024-05-13": {
         "name": "gpt-4o",
         "chat_or_completion": "chat",
         "max_rpm": 10_000,
@@ -105,7 +105,7 @@ _openai_model_parameters = {
         "max_context": 128_000,
         "max_output_tokens": 4_096,
     },
-    "gpt-4o-mini": {
+    "gpt-4o-mini-2024-07-18": {
         "name": "gpt-3.5-turbo-0125",
         "chat_or_completion": "chat",
         "max_rpm": 10_000,

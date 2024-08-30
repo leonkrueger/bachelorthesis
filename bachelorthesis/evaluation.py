@@ -32,8 +32,8 @@ strategies = {
     # ),
     # "Llama3_not_finetuned": Llama3Strategy(max_column_mapping_retries=2),
     "GPT3_5": OpenAIStrategy(max_column_mapping_retries=1),
-    "GPT4o": OpenAIStrategy("gpt-4o", 1),
-    "GPT4o_mini": OpenAIStrategy("gpt-4o-mini", 1),
+    "GPT4o": OpenAIStrategy("gpt-4o-2024-05-13", 1),
+    "GPT4o_mini": OpenAIStrategy("gpt-4o-mini-2024-07-18", 1),
     # "Heuristic_exact": HeuristicStrategy(MatchingAlgorithm.EXACT_MATCH),
     # "Heuristic_fuzzy": HeuristicStrategy(MatchingAlgorithm.FUZZY_MATCH),
     # "Heuristic_synonyms": HeuristicStrategy(
@@ -158,7 +158,13 @@ def run_experiment(folder: str) -> None:
                     )
 
             save_results_and_clean_database(results_file_path)
-            logger.info(f"Experiment executed: {results_file_path}")
+            if hasattr(strategy, "total_costs"):
+                logger.info(
+                    f"Experiment executed: {results_file_path} with costs: {strategy.total_costs}"
+                )
+                strategy.total_costs = 0.0
+            else:
+                logger.info(f"Experiment executed: {results_file_path}")
 
 
 def run_experiments_for_database(folder: str) -> None:

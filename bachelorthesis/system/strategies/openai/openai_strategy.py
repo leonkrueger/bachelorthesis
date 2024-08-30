@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 
 from ...data.query_data import QueryData
 from ..strategy import Strategy
-from .openai import _openai_execute_request
+from .openai import _openai_compute_actual_cost, openai_execute
 
 
 class OpenAIStrategy(Strategy):
@@ -19,6 +19,7 @@ class OpenAIStrategy(Strategy):
 
         self.max_tokens = 30
         self.max_column_mapping_retries = max_column_mapping_retries
+        self.total_costs = 0.0
 
     def generate_table_prediction_request(
         self, query_data: QueryData
@@ -64,20 +65,11 @@ class OpenAIStrategy(Strategy):
         }
 
     def predict_table_name(self, query_data: QueryData) -> str:
-        return (
-            re.search(
-                r"Table: (?P<table>\S+)",
-                (
-                    _openai_execute_request(
-                        self.generate_table_prediction_request(query_data)
-                    )[0]
-                    .choices[0]
-                    .message.content
-                ),
-            )
-            .group("table")
-            .strip()
-        )
+        response = openai_execute(
+            [self.generate_table_prediction_request(query_data)], force=1.0, silent=True
+        )[0]
+        self.total_costs += _openai_compute_actual_cost(response)
+        return response["choices"][0]["message"]["content"].split()[0]
 
     def generate_column_mapping_request(
         self,
@@ -148,18 +140,9 @@ class OpenAIStrategy(Strategy):
             # If not one generated name fits, the last prediction is used and an integer is added to its end
             was_added = False
             for i in range(self.max_column_mapping_retries):
-                prediction = (
-                    re.search(
-                        r"Column: (?P<column>\S+)",
-                        (
-                            _openai_execute_request(request)[0]
-                            .choices[0]
-                            .message.content
-                        ),
-                    )
-                    .group("column")
-                    .strip()
-                )
+                response = openai_execute([request], force=1.0, silent=True)[0]
+                self.total_costs += _openai_compute_actual_cost(response)
+                prediction = response["choices"][0]["message"]["content"].split()[0]
 
                 if prediction not in predicted_columns:
                     predicted_columns.append(prediction)
@@ -170,7 +153,7 @@ class OpenAIStrategy(Strategy):
             if not was_added:
                 modification = 1
                 while (
-                    modified_prediction := prediction + modification
+                    modified_prediction := prediction + str(modification)
                 ) in predicted_columns:
                     modification += 1
                 predicted_columns.append(modified_prediction)
