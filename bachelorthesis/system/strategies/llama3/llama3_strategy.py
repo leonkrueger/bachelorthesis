@@ -17,9 +17,9 @@ class Llama3Strategy(Strategy):
     ) -> None:
         self.table_prediction_model = Llama3Model(table_prediction_model_dir)
         self.column_mapping_model = (
-            self.table_prediction_model 
-            if table_prediction_model_dir == column_mapping_model_dir 
-            else Llama3Model(column_mapping_model_dir
+            self.table_prediction_model
+            if table_prediction_model_dir == column_mapping_model_dir
+            else Llama3Model(column_mapping_model_dir)
         )
         self.logger = logging.getLogger(__name__)
 
