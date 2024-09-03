@@ -20,6 +20,7 @@ from transformers import (
     AutoTokenizer,
     BitsAndBytesConfig,
 )
+from trl import DataCollatorForCompletionOnlyLM
 
 model_id = "meta-llama/Meta-Llama-3-8B-Instruct"
 train_input_file = "missing_columns_12000_csv_already_predicted"
@@ -180,12 +181,15 @@ training_args = transformers.TrainingArguments(
 )
 
 # Train model
+response_template = "assistant"
 trainer = transformers.Trainer(
     model=model,
     train_dataset=train_dataset,
     eval_dataset=validation_dataset,
     args=training_args,
-    data_collator=transformers.DataCollatorForLanguageModeling(tokenizer, mlm=False),
+    data_collator=DataCollatorForCompletionOnlyLM(
+        response_template, tokenizer=tokenizer
+    ),
 )
 model.config.use_cache = False
 
