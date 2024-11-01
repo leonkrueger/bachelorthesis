@@ -13,7 +13,6 @@ from tqdm import tqdm
 load_env_variables()
 
 from system.databases.python_database import PythonDatabase
-from system.insert_query_handler import InsertQueryHandler
 from system.strategies.heuristic.heuristic_strategy import (
     HeuristicStrategy,
     MatchingAlgorithm,
@@ -21,6 +20,8 @@ from system.strategies.heuristic.heuristic_strategy import (
 from system.strategies.heuristic.synonym_generator import WordnetSynonymGenerator
 from system.strategies.llama3.llama3_strategy import Llama3Strategy
 from system.strategies.openai.openai_strategy import OpenAIStrategy
+
+from bachelorthesis.system.insert_handler import InsertHandler
 
 database = PythonDatabase()
 
@@ -92,7 +93,7 @@ def save_results_and_clean_database(results_file_path: str) -> None:
 
 
 def run_gold_standard(folder: str) -> None:
-    """Runs the gold standard queries"""
+    """Runs the gold standard inserts"""
     # Return if experiment was already run
     results_file_path = os.path.join(folder, "gold_standard_results.json")
     with open(results_file_path, encoding="utf-8") as results_file:
@@ -102,23 +103,23 @@ def run_gold_standard(folder: str) -> None:
     with open(
         os.path.join(folder, "gold_standard_input.sql"), encoding="utf-8"
     ) as inserts_file:
-        queries = inserts_file.read().split(";\n")
+        inserts = inserts_file.read().split(";\n")
 
-    for query in queries:
-        query = query.strip()
-        if query == "":
+    for insert in inserts:
+        insert = insert.strip()
+        if insert == "":
             continue
         try:
-            database.execute_query(query)
+            database.execute(insert)
         except Exception as e:
-            logger.error(f"Error {e} while executing query: {query}\n")
+            logger.error(f"Error {e} while executing insert: {insert}\n")
 
     save_results_and_clean_database(results_file_path)
     logger.info(f"Gold Standard executed: {folder}")
 
 
 def run_experiment(folder: str) -> None:
-    """Runs the queries of one experiment"""
+    """Runs the inserts of one experiment"""
     for path in os.listdir(folder):
         inserts_file_path = os.path.join(folder, path)
         if os.path.isdir(inserts_file_path) or not inserts_file_path.endswith(".sql"):
@@ -140,19 +141,19 @@ def run_experiment(folder: str) -> None:
                 if results_file.read().strip() != "":
                     continue
 
-            insert_query_handler = InsertQueryHandler(database, strategy)
+            insert_handler = InsertHandler(database, strategy)
 
             with open(inserts_file_path, encoding="utf-8") as input_file:
-                queries = input_file.read().split(";\n")
-            for query in tqdm(queries):
-                query = query.strip()
-                if query == "":
+                inserts = input_file.read().split(";\n")
+            for insert in tqdm(inserts):
+                insert = insert.strip()
+                if insert == "":
                     continue
                 try:
-                    insert_query_handler.handle_insert_query(query)
+                    insert_handler.handle_insert(insert)
                 except Exception as e:
                     logger.error(
-                        f"Error while executing query: {query}\n"
+                        f"Error while executing insert: {insert}\n"
                         + traceback.format_exc()
                         + "\n\n"
                     )

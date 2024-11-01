@@ -1,4 +1,4 @@
-from ...data.query_data import QueryData
+from ...data.insert_data import InsertData
 from ...utils.utils import remove_quotes
 from ..large_language_model import LargeLanguageModel
 
@@ -7,8 +7,8 @@ class NamePredictor:
     def __init__(self, model: LargeLanguageModel) -> None:
         self.model = model
 
-    def predict_table_name(self, query_data: QueryData) -> str:
-        """Predicts a suitable table name for an insertion query"""
+    def predict_table_name(self, insert_data: InsertData) -> str:
+        """Predicts a suitable table name for an insert"""
         messages = [
             {
                 "role": "system",
@@ -18,15 +18,15 @@ class NamePredictor:
             {
                 "role": "user",
                 "content": "Predict a name for a database table for this insert query.\n"
-                f"Query: {''.join(query_data.query)}\n"
+                f"Query: {''.join(insert_data.insert)}\n"
                 "Table:",
             },
         ]
 
         return remove_quotes(self.model.run_prompt(messages)).replace(" ", "_")
 
-    def predict_column_name(self, query_data: QueryData, value: str) -> str:
-        """Predicts a suitable column name for a specific value of a query"""
+    def predict_column_name(self, insert_data: InsertData, value: str) -> str:
+        """Predicts a suitable column name for a specific value of an insert"""
         messages = [
             {
                 "role": "system",
@@ -37,7 +37,7 @@ class NamePredictor:
             {
                 "role": "user",
                 "content": "Predict a name for a database column for this value.\n"
-                f"Query: {''.join(query_data.query)}\n"
+                f"Query: {''.join(insert_data.insert)}\n"
                 f"Value: {value}"
                 "Column:",
             },

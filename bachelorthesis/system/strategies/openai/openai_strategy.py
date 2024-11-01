@@ -3,7 +3,7 @@ import re
 from copy import deepcopy
 from typing import Any, Dict, List
 
-from ...data.query_data import QueryData
+from ...data.insert_data import InsertData
 from ..strategy import Strategy
 from .openai import _openai_compute_actual_cost, openai_execute
 
@@ -22,7 +22,7 @@ class OpenAIStrategy(Strategy):
         self.total_costs = 0.0
 
     def generate_table_prediction_request(
-        self, query_data: QueryData
+        self, insert_data: InsertData
     ) -> Dict[str, Any]:
         database_string = (
             "\n".join(
@@ -35,10 +35,10 @@ class OpenAIStrategy(Strategy):
                             for row in table_data[1]
                         ]
                     )
-                    for table, table_data in query_data.database_state.items()
+                    for table, table_data in insert_data.database_state.items()
                 ]
             )
-            if len(query_data.database_state) > 0
+            if len(insert_data.database_state) > 0
             else "No table exists yet."
         )
 
@@ -56,7 +56,7 @@ class OpenAIStrategy(Strategy):
                 {
                     "role": "user",
                     "content": "Predict the table for this example:\n"
-                    f"Query: {query_data.get_query(use_quotes=False)}\n"
+                    f"Query: {insert_data.get_insert(use_quotes=False)}\n"
                     f"Database State:\n{database_string}\n"
                     "Table:",
                 },
@@ -64,22 +64,24 @@ class OpenAIStrategy(Strategy):
             "max_tokens": self.max_tokens,
         }
 
-    def predict_table_name(self, query_data: QueryData) -> str:
+    def predict_table_name(self, insert_data: InsertData) -> str:
         response = openai_execute(
-            [self.generate_table_prediction_request(query_data)], force=1.0, silent=True
+            [self.generate_table_prediction_request(insert_data)],
+            force=1.0,
+            silent=True,
         )[0]
         self.total_costs += _openai_compute_actual_cost(response)
         return response["choices"][0]["message"]["content"].split()[0]
 
     def generate_column_mapping_request(
         self,
-        query_data: QueryData,
-        query_value: str,
-        query_column: str,
+        insert_data: InsertData,
+        insert_value: str,
+        insert_column: str,
         db_columns: List[str],
         db_values: List[str],
     ) -> Dict[str, Any]:
-        table_string = f"Table {query_data.table}:\n" + "\n".join(
+        table_string = f"Table {insert_data.table}:\n" + "\n".join(
             [
                 f"Column {db_column}, Example values: [{', '.join([str(row[db_column_index]) for row in db_values if row[db_column_index] is not None])}]"
                 for db_column_index, db_column in enumerate(db_columns)
@@ -103,9 +105,9 @@ class OpenAIStrategy(Strategy):
                     "role": "user",
                     "content": (
                         "Predict the column for this value:\n"
-                        f"Query: {query_data.get_query(use_quotes=False)}\n"
-                        f"Specified column: {query_column}\n"
-                        f"Value: {query_value}\n"
+                        f"Query: {insert_data.get_insert(use_quotes=False)}\n"
+                        f"Specified column: {insert_column}\n"
+                        f"Value: {insert_value}\n"
                         f"{table_string}\n"
                         "Column:"
                     ),
@@ -114,28 +116,28 @@ class OpenAIStrategy(Strategy):
             "max_tokens": self.max_tokens,
         }
 
-    def predict_column_mapping(self, query_data: QueryData) -> List[str]:
+    def predict_column_mapping(self, insert_data: InsertData) -> List[str]:
         predicted_columns = []
 
-        if query_data.table in query_data.database_state.keys():
+        if insert_data.table in insert_data.database_state.keys():
             db_columns, db_values = deepcopy(
-                query_data.database_state[query_data.table]
+                insert_data.database_state[insert_data.table]
             )
         else:
             db_columns, db_values = [], []
 
-        for index, query_value in enumerate(query_data.values[0]):
-            query_column = (
-                query_data.columns[index]
-                if query_data.columns
+        for index, insert_value in enumerate(insert_data.values[0]):
+            insert_column = (
+                insert_data.columns[index]
+                if insert_data.columns
                 else "No column specified"
             )
 
             request = self.generate_column_mapping_request(
-                query_data, query_value, query_column, db_columns, db_values
+                insert_data, insert_value, insert_column, db_columns, db_values
             )
 
-            # Different columns from the query must not be mapped to the same database column
+            # Different columns from the insert must not be mapped to the same database column
             # If that is the case retry as long as specified
             # If not one generated name fits, the last prediction is used and an integer is added to its end
             was_added = False
@@ -158,7 +160,7 @@ class OpenAIStrategy(Strategy):
                     modification += 1
                 predicted_columns.append(modified_prediction)
                 self.logger.info(
-                    f"No fitting db column found for column: {query_column}, value: {query_value} in query: {query_data.get_query()}."
+                    f"No fitting db column found for column: {insert_column}, value: {insert_value} in insert: {insert_data.get_insert()}."
                     f"Used column {modified_prediction} instead."
                 )
 

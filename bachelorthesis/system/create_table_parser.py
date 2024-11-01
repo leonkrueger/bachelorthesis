@@ -1,17 +1,21 @@
-def parse_create_table(query: str) -> tuple[str, list[str], list[str]]:
-    """Get the name of the table and the column names and types from the query"""
+def parse_create_table(statement: str) -> tuple[str, list[str], list[str]]:
+    """Get the name of the table and the column names and types from the statement"""
     # Get table name
-    table_name_first_quote_index = query.find("`")
-    table_name_second_quote_index = query.find("`", table_name_first_quote_index + 1)
-    table_name = query[table_name_first_quote_index + 1 : table_name_second_quote_index]
+    table_name_first_quote_index = statement.find("`")
+    table_name_second_quote_index = statement.find(
+        "`", table_name_first_quote_index + 1
+    )
+    table_name = statement[
+        table_name_first_quote_index + 1 : table_name_second_quote_index
+    ]
 
     # Get the column information needed
-    attribute_start_index = query.find("(")
-    ignore_last_chars = 2 if query.endswith(";") else 1
+    attribute_start_index = statement.find("(")
+    ignore_last_chars = 2 if statement.endswith(";") else 1
     attribute_data = [
         attribute.split()
-        for attribute in query[
-            attribute_start_index + 1 : len(query) - ignore_last_chars
+        for attribute in statement[
+            attribute_start_index + 1 : len(statement) - ignore_last_chars
         ].split(",\n")
     ]
 

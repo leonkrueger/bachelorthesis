@@ -14,35 +14,34 @@ class MySQLDatbase(Database):
             database="db",
         )
 
-    def execute_query(
-        self, query: str, params: Tuple[str, ...] = ()
+    def execute(
+        self, statement: str, params: Tuple[str, ...] = ()
     ) -> List[Tuple[Any, ...]]:
         cursor = self.conn.cursor()
-        # print(query)
-        cursor.execute(query, params)
+        cursor.execute(statement, params)
         output = cursor.fetchall()
         self.conn.commit()
         cursor.close()
         return output
 
     def select_all_data(self, table_name: str) -> List[Tuple[Any, ...]]:
-        query = f"SELECT * FROM {table_name};"
-        return self.execute_query(query)
+        statement = f"SELECT * FROM {table_name};"
+        return self.execute(statement)
 
     def get_all_tables(self) -> List[str]:
-        query = "SHOW TABLES;"
-        output = self.execute_query(query)
+        statement = "SHOW TABLES;"
+        output = self.execute(statement)
         return [table[0] for table in output]
 
     def get_all_columns(self, table_name: str) -> List[Tuple[str, str]]:
-        query = f"SHOW COLUMNS FROM {table_name};"
-        output = self.execute_query(query)
+        statement = f"SHOW COLUMNS FROM {table_name};"
+        output = self.execute(statement)
         cols = [col[0:2] for col in output]
         return cols
 
     def get_example_rows(self, table_name: str) -> List[Tuple[Any, ...]]:
-        query = f"SELECT * FROM {table_name} LIMIT 3;"
-        return self.execute_query(query)
+        statement = f"SELECT * FROM {table_name} LIMIT 3;"
+        return self.execute(statement)
 
     def get_database_state(self) -> Dict[str, Tuple[List[str], List[Tuple[Any, ...]]]]:
         return {
@@ -56,18 +55,18 @@ class MySQLDatbase(Database):
     def create_table(
         self, table_name: str, column_names: List[str], column_types: List[str]
     ) -> None:
-        query = f"CREATE TABLE {table_name} ({', '.join([f'{column[0]} {column[1]}' for column in zip(column_names, column_types)])});"
-        self.execute_query(query)
+        statement = f"CREATE TABLE {table_name} ({', '.join([f'{column[0]} {column[1]}' for column in zip(column_names, column_types)])});"
+        self.execute(statement)
 
     def create_column(
         self, table_name: str, column_name: str, column_type: str
     ) -> None:
-        query = f"ALTER TABLE {table_name} ADD {column_name} {column_type};"
-        self.execute_query(query)
+        statement = f"ALTER TABLE {table_name} ADD {column_name} {column_type};"
+        self.execute(statement)
 
     def remove_table(self, table_name: str) -> None:
-        query = f"DROP TABLE {table_name};"
-        self.execute_query(query)
+        statement = f"DROP TABLE {table_name};"
+        self.execute(statement)
 
     def reset_database(self) -> None:
         for table in self.get_all_tables():

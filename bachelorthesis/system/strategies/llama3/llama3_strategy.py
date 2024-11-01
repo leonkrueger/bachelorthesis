@@ -3,7 +3,7 @@ import re
 from copy import deepcopy
 from typing import Dict, List
 
-from ...data.query_data import QueryData
+from ...data.insert_data import InsertData
 from ..strategy import Strategy
 from .llama3_model import Llama3Model
 
@@ -25,7 +25,7 @@ class Llama3Strategy(Strategy):
 
         self.max_column_mapping_retries = max_column_mapping_retries
 
-    def predict_table_name(self, query_data: QueryData) -> str:
+    def predict_table_name(self, insert_data: InsertData) -> str:
         database_string = (
             "\n".join(
                 [
@@ -37,10 +37,10 @@ class Llama3Strategy(Strategy):
                             for row in table_data[1]
                         ]
                     )
-                    for table, table_data in query_data.database_state.items()
+                    for table, table_data in insert_data.database_state.items()
                 ]
             )
-            if len(query_data.database_state) > 0
+            if len(insert_data.database_state) > 0
             else "No table exists yet."
         )
 
@@ -59,7 +59,7 @@ class Llama3Strategy(Strategy):
                     {
                         "role": "user",
                         "content": "Predict the table for this example:\n"
-                        f"Query: {query_data.get_query(use_quotes=False)}\n"
+                        f"Query: {insert_data.get_insert(use_quotes=False)}\n"
                         f"Database State:\n{database_string}\n"
                         "Table:",
                     },
@@ -67,31 +67,31 @@ class Llama3Strategy(Strategy):
             ),
         ).group("table")
 
-    def predict_column_mapping(self, query_data: QueryData) -> List[str]:
+    def predict_column_mapping(self, insert_data: InsertData) -> List[str]:
         predicted_columns = []
 
-        if query_data.table in query_data.database_state.keys():
+        if insert_data.table in insert_data.database_state.keys():
             db_columns, db_values = deepcopy(
-                query_data.database_state[query_data.table]
+                insert_data.database_state[insert_data.table]
             )
         else:
             db_columns, db_values = [], []
 
-        for index, query_value in enumerate(query_data.values[0]):
-            table_string = f"Table {query_data.table}:\n" + "\n".join(
+        for index, insert_value in enumerate(insert_data.values[0]):
+            table_string = f"Table {insert_data.table}:\n" + "\n".join(
                 [
                     f"Column {db_column}, Example values: [{', '.join([str(row[db_column_index]) for row in db_values if row[db_column_index] is not None])}]"
                     for db_column_index, db_column in enumerate(db_columns)
                 ]
             )
 
-            query_column = (
-                query_data.columns[index]
-                if query_data.columns
+            insert_column = (
+                insert_data.columns[index]
+                if insert_data.columns
                 else "No column specified"
             )
 
-            # Different columns from the query must not be mapped to the same database column
+            # Different columns from the insert must not be mapped to the same database column
             # If that is the case retry as long as specified
             # If not one generated name fits, the last prediction is used and an integer is added to its end
             was_added = False
@@ -111,9 +111,9 @@ class Llama3Strategy(Strategy):
                             {
                                 "role": "user",
                                 "content": "Predict the column for this value:\n"
-                                f"Query: {query_data.get_query(use_quotes=False)}\n"
-                                f"Specified column: {query_column}\n"
-                                f"Value: {query_value}\n"
+                                f"Query: {insert_data.get_insert(use_quotes=False)}\n"
+                                f"Specified column: {insert_column}\n"
+                                f"Value: {insert_value}\n"
                                 f"{table_string}\n"
                                 "Column:",
                             },
@@ -135,7 +135,7 @@ class Llama3Strategy(Strategy):
                     modification += 1
                 predicted_columns.append(modified_prediction)
                 self.logger.info(
-                    f"No fitting db column found for column: {query_column}, value: {query_value} in query: {query_data.get_query()}."
+                    f"No fitting db column found for column: {insert_column}, value: {insert_value} in insert: {insert_data.get_insert()}."
                     f"Used column {modified_prediction} instead."
                 )
 

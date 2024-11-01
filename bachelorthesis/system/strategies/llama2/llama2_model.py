@@ -13,7 +13,7 @@ from transformers import (
     pipeline,
 )
 
-from ...data.query_data import QueryData
+from ...data.insert_data import InsertData
 from ..strategy import Strategy
 
 
@@ -86,15 +86,15 @@ class LLama2Model(Strategy):
         else:
             return self.pipe(prompt_text)[0]["generated_text"]
 
-    def predict_table_name(self, query_data: QueryData) -> str:
+    def predict_table_name(self, insert_data: InsertData) -> str:
         database_string = (
             "\n".join(
                 [
                     f"- Table: {table}, Columns: [{', '.join([column[0] for column in table_data[0]])}]"
-                    for table, table_data in query_data.database_state.items()
+                    for table, table_data in insert_data.database_state.items()
                 ]
             )
-            if len(query_data.database_state) > 0
+            if len(insert_data.database_state) > 0
             else "No table exists yet."
         )
 
@@ -111,7 +111,7 @@ class LLama2Model(Strategy):
                 "Answer only with the name of the table. Don't give any explanation for your result.\n"
                 "<</SYS>>\n"
                 # "Predict the table for this example:\n"
-                f"Query: {query_data.get_query(use_quotes=False)}\n"
+                f"Query: {insert_data.get_insert(use_quotes=False)}\n"
                 f"Database State:\n{database_string}[/INST]\n"
                 "Table:",
             ),

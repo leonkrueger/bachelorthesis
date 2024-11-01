@@ -6,10 +6,11 @@ from system.utils.utils import load_env_variables
 
 load_env_variables()
 
-from system.data.query_data import QueryData
-from system.insert_query_parser import parse_insert_query
 from system.strategies.llama3.llama3_model import Llama3Model
 from tqdm import tqdm
+
+from bachelorthesis.system.data.insert_data import InsertData
+from bachelorthesis.system.insert_parser import parse_insert
 
 # Switch if necessary
 strategy_name = "missing_columns_12000_own_predicted_removed_from_table_state"
@@ -149,14 +150,14 @@ def run_experiments_for_strategy(
 ) -> List[Dict[str, Any]]:
     result_points = []
     for data_point in tqdm(evaluation_input):
-        query_data = parse_insert_query(QueryData(data_point["query"], None))
+        insert_data = parse_insert(InsertData(data_point["query"], None))
 
-        if not query_data.columns:
-            query_data.columns = [None for i in range(len(query_data.values[0]))]
+        if not insert_data.columns:
+            insert_data.columns = [None for i in range(len(insert_data.values[0]))]
 
         # Run prompt directly
         if "combined_columns" in strategy_name:
-            prompt = generate_prompt(data_point, len(query_data.values[0]))
+            prompt = generate_prompt(data_point, len(insert_data.values[0]))
             data_point["predicted_column_names"] = model.run_prompt(
                 prompt, max_new_tokens
             )
@@ -172,7 +173,7 @@ def run_experiments_for_strategy(
             ):
                 continue
 
-            for value, column in zip(query_data.values[0], query_data.columns):
+            for value, column in zip(insert_data.values[0], insert_data.columns):
                 predicted = model.run_prompt(
                     generate_prompt_for_single_column(
                         data_point,
@@ -194,7 +195,7 @@ def run_experiments_for_strategy(
                     ]
         elif "already_predicted" in strategy_name:
             predicted_columns = []
-            for value, column in zip(query_data.values[0], query_data.columns):
+            for value, column in zip(insert_data.values[0], insert_data.columns):
                 predicted_columns.append(
                     model.run_prompt(
                         generate_prompt_for_single_column(
@@ -213,7 +214,7 @@ def run_experiments_for_strategy(
                     generate_prompt_for_single_column(data_point, value, column),
                     max_new_tokens,
                 )
-                for value, column in zip(query_data.values[0], query_data.columns)
+                for value, column in zip(insert_data.values[0], insert_data.columns)
             ]
         result_points.append(data_point)
 

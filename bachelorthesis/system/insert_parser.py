@@ -4,7 +4,7 @@ import re
 import tokenize
 from typing import List, Tuple
 
-from .data.query_data import QueryData
+from .data.insert_data import InsertData
 
 
 class UnexpectedTokenException(Exception):
@@ -29,9 +29,8 @@ def unexpected_token_encountered(
     )
 
 
-def parse_insert_query(query_data: QueryData) -> QueryData:
-    """Parses INSERT-queries and extracts the table, columns, values and column types if present
-    Parameter query needs to be lowercase"""
+def parse_insert(insert_data: InsertData) -> InsertData:
+    """Parses INSERTs and extracts the table, columns, values and column types if present"""
     # TODO: '$' in table/column name doesn't work
     # INSERT INTO Cities (Name, Country) VALUES ("Paris", "France");
     # INSERT INTO Cities VALUES ("Paris", "France"), ("Berlin", "Germany");
@@ -41,12 +40,14 @@ def parse_insert_query(query_data: QueryData) -> QueryData:
         tokens = [
             token.string
             for token in tokenize.generate_tokens(
-                io.StringIO(query_data.query).readline
+                io.StringIO(insert_data.insert).readline
             )
             if token.string.strip() != ""
         ]
     except Exception as e:
-        logging.getLogger(__name__).error("Could not parse query: " + query_data.query)
+        logging.getLogger(__name__).error(
+            "Could not parse insert: " + insert_data.insert
+        )
         raise e
 
     if tokens[0].upper() != "INSERT":
@@ -56,19 +57,21 @@ def parse_insert_query(query_data: QueryData) -> QueryData:
 
     index = 2
     if tokens[index].upper() != "VALUES" and tokens[index] != "(":
-        query_data.table, index = parse_table(tokens, index)
+        insert_data.table, index = parse_table(tokens, index)
     if tokens[index] == "(":
-        query_data.columns, index = parse_columns(tokens, index)
+        insert_data.columns, index = parse_columns(tokens, index)
     if tokens[index].upper() != "VALUES":
         unexpected_token_encountered(tokens, "VALUES", index)
-    query_data.values, query_data.column_types, index = parse_values(tokens, index + 1)
+    insert_data.values, insert_data.column_types, index = parse_values(
+        tokens, index + 1
+    )
 
     if index < len(tokens) and tokens[index] != ";" and "".join(tokens[index:]) != "":
         unexpected_token_encountered(tokens, ";", index)
 
     # All tokens after the ';' are ignored
 
-    return query_data
+    return insert_data
 
 
 def parse_table(tokens: List[str], index: int) -> Tuple[str, int]:

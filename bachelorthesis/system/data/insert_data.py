@@ -1,8 +1,8 @@
 from typing import Any, Dict, List, Tuple, Union
 
 
-class QueryData:
-    query: str
+class InsertData:
+    insert: str
     database_state: Dict[str, Tuple[List[str], List[Tuple[Any, ...]]]]
 
     table: Union[str, None] = None
@@ -14,14 +14,14 @@ class QueryData:
 
     def __init__(
         self,
-        query: str,
+        insert: str,
         database_state: Dict[str, Tuple[List[str], List[Tuple[Any, ...]]]],
     ):
-        self.query = query
+        self.insert = insert
         self.database_state = database_state
 
-    def get_query(self, use_quotes: bool = True) -> str:
-        """Creates the SQL-query with all available information"""
+    def get_insert(self, use_quotes: bool = True) -> str:
+        """Creates the SQL-insert with all available information"""
         table_string = (
             (f"`{self.table}` " if use_quotes else f"{self.table} ")
             if self.table

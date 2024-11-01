@@ -2,10 +2,10 @@ from typing import Any, Dict, List, Tuple
 
 
 class Database:
-    def execute_query(
-        self, query: str, params: Tuple[str, ...] = ()
+    def execute(
+        self, statement: str, params: Tuple[str, ...] = ()
     ) -> List[Tuple[Any, ...]]:
-        """Executes the query with the given parameters on the database and returns its result"""
+        """Executes the statement with the given parameters on the database and returns its result"""
         raise NotImplementedError()
 
     def select_all_data(self, table_name: str) -> List[Tuple[Any, ...]]:

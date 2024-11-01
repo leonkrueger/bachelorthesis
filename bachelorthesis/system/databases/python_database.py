@@ -1,24 +1,24 @@
 from typing import Any, Dict, List, Tuple
 
 from ..create_table_parser import parse_create_table
-from ..data.query_data import QueryData
-from ..insert_query_parser import parse_insert_query
+from ..data.insert_data import InsertData
+from ..insert_parser import parse_insert
 from .database import Database
 
 
-class QueryNotSupportedException(Exception):
-    def __init__(self, query: str):
-        self.query = query
+class StatementNotSupportedException(Exception):
+    def __init__(self, statement: str):
+        self.statement = statement
 
 
-class IncorrectQueryException(Exception):
-    def __init__(self, query: str):
-        self.query = query
+class IncorrectInsertException(Exception):
+    def __init__(self, insert: str):
+        self.insert = insert
 
 
-class QueryDoesNotFitDatabaseException(Exception):
-    def __init__(self, query: str, database_columns: List[str]):
-        self.query = query
+class insertDoesNotFitDatabaseException(Exception):
+    def __init__(self, insert: str, database_columns: List[str]):
+        self.insert = insert
         self.database_columns = database_columns
 
 
@@ -26,44 +26,46 @@ class PythonDatabase(Database):
     columns: Dict[str, List[Tuple[str, str]]] = {}
     values: Dict[str, List[List[Any]]] = {}
 
-    def execute_query(
-        self, query: str, params: Tuple[str, ...] = ()
+    def execute(
+        self, statement: str, params: Tuple[str, ...] = ()
     ) -> List[Tuple[Any, ...]]:
-        query_upper = query.upper()
-        if query_upper.startswith("INSERT INTO"):
-            query_data = QueryData(query, {})
-            parse_insert_query(query_data)
+        statement_upper = statement.upper()
+        if statement_upper.startswith("INSERT INTO"):
+            insert_data = InsertData(statement, {})
+            parse_insert(insert_data)
 
-            if not query_data.table:
-                raise IncorrectQueryException(query)
+            if not insert_data.table:
+                raise IncorrectInsertException(statement)
 
-            if not query_data.columns and len(query_data.values[0]) != len(
-                self.columns[query_data.table]
+            if not insert_data.columns and len(insert_data.values[0]) != len(
+                self.columns[insert_data.table]
             ):
-                raise IncorrectQueryException(query)
-            elif not query_data.columns:
-                query_data.columns = [
-                    column[0] for column in self.get_all_columns(query_data.table)
+                raise IncorrectInsertException(statement)
+            elif not insert_data.columns:
+                insert_data.columns = [
+                    column[0] for column in self.get_all_columns(insert_data.table)
                 ]
 
-            if any([len(row) != len(query_data.columns) for row in query_data.values]):
-                raise IncorrectQueryException(query)
+            if any(
+                [len(row) != len(insert_data.columns) for row in insert_data.values]
+            ):
+                raise IncorrectInsertException(statement)
 
-            self.insert(query_data)
+            self.insert(insert_data)
 
-        elif query_upper.startswith("CREATE TABLE"):
-            table_name, column_names, column_types = parse_create_table(query)
+        elif statement_upper.startswith("CREATE TABLE"):
+            table_name, column_names, column_types = parse_create_table(statement)
             self.create_table(table_name, column_names, column_types)
-        elif query_upper.startswith("SHOW TABLES"):
+        elif statement_upper.startswith("SHOW TABLES"):
             return [self.get_all_tables()]
-        elif query_upper.startswith("SHOW COLUMNS FROM"):
-            table_name = query[18:-1] if query.endswith(";") else query[18:]
+        elif statement_upper.startswith("SHOW COLUMNS FROM"):
+            table_name = statement[18:-1] if statement.endswith(";") else statement[18:]
             return self.get_all_columns(table_name)
-        elif query_upper.startswith("SELECT * FROM"):
-            table_name = query[14:-1] if query.endswith(";") else query[14:]
+        elif statement_upper.startswith("SELECT * FROM"):
+            table_name = statement[14:-1] if statement.endswith(";") else statement[14:]
             return self.select_all_data(table_name)
         else:
-            raise QueryNotSupportedException(query)
+            raise StatementNotSupportedException(statement)
 
     def select_all_data(self, table_name: str) -> List[Tuple[Any, ...]]:
         return [tuple(row) for row in self.values[table_name]]
@@ -107,22 +109,22 @@ class PythonDatabase(Database):
         self.columns = {}
         self.values = {}
 
-    def insert(self, query_data: QueryData) -> None:
+    def insert(self, insert_data: InsertData) -> None:
         """Inserts the data into the database"""
-        for query_row in query_data.values:
-            database_row = [None for column in self.columns[query_data.table]]
+        for insert_row in insert_data.values:
+            database_row = [None for column in self.columns[insert_data.table]]
 
-            for query_column, query_colummn_type, value in zip(
-                query_data.columns, query_data.column_types, query_row
+            for insert_column, insert_colummn_type, value in zip(
+                insert_data.columns, insert_data.column_types, insert_row
             ):
                 column_index = [
                     i
-                    for i, column in enumerate(self.columns[query_data.table])
-                    if column[0] == query_column
+                    for i, column in enumerate(self.columns[insert_data.table])
+                    if column[0] == insert_column
                 ]
                 if len(column_index) != 1:
-                    raise QueryDoesNotFitDatabaseException(
-                        query_data.query, self.columns[query_data.table]
+                    raise insertDoesNotFitDatabaseException(
+                        insert_data.insert, self.columns[insert_data.table]
                     )
 
                 database_row[column_index[0]] = (
@@ -130,13 +132,13 @@ class PythonDatabase(Database):
                     if value == "NULL"
                     else (
                         int(value)
-                        if query_colummn_type == "BIGINT"
+                        if insert_colummn_type == "BIGINT"
                         else (
                             float(value)
-                            if query_colummn_type == "DOUBLE"
+                            if insert_colummn_type == "DOUBLE"
                             else value[1 : len(value) - 1]
                         )
                     )
                 )
 
-            self.values[query_data.table].append(database_row)
+            self.values[insert_data.table].append(database_row)

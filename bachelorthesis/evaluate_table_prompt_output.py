@@ -101,7 +101,7 @@ def run_experiments_for_strategy(
                 else data_point["database_state"].keys()
             )
 
-            # Try 3 times. When no alternative name is found, skip this query.
+            # Try 3 times. When no alternative name is found, skip this insert.
             for i in range(3):
                 table_name = model.run_prompt(table_name_generation_prompt)
                 if table_name not in database_tables:
