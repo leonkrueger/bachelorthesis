@@ -23,51 +23,51 @@ from transformers import (
 from trl import DataCollatorForCompletionOnlyLM
 
 model_id = "meta-llama/Meta-Llama-3-8B-Instruct"
-train_input_file = "missing_columns_12000_csv_already_predicted"
-validation_input_file = "missing_columns_csv_already_predicted"
-output_dir = "missing_columns_12000_1_csv_already_predicted"
-wandb_run_name = "12000_queries_1_epochs_csv_already_predicted"
+train_input_file = "missing_tables_12000_csv_columns_deleted"
+validation_input_file = "missing_tables_csv_columns_deleted"
+output_dir = "missing_tables_12000_1_csv_columns_deleted"
+wandb_run_name = "12000_queries_1_epochs_csv_columns_deleted"
 
-os.environ["WANDB_PROJECT"] = "bachelorthesis_missing_columns"
+os.environ["WANDB_PROJECT"] = "bachelorthesis_missing_tables"
 wandb.login()
 wandb.init(name=wandb_run_name)
 
 
 def generate_prompt(data_point):
     # Table prediction prompt:
-    # return [
-    #     {
-    #         "role": "system",
-    #         "content": "You are an intelligent database that predicts on which table a SQL-insert should be executed. "
-    #         "The inserts can contain abbreviated or synonymous names. The table and column names can be missing entirely. "
-    #         "Base your guess on the available information. "
-    #         "If there is a suitable table in the database answer its name. Else, predict a suitable name for a new database table. "
-    #         "Answer only with the name of the table. Don't give any explanation for your result.",
-    #     },
-    #     {
-    #         "role": "user",
-    #         "content": f"{data_point['Instruction']}\n" "Table:",
-    #     },
-    #     {"role": "assistant", "content": f"{data_point['Response'][7:]}"},
-    # ]
-
-    # Column prediction prompt (single column)
     return [
         {
             "role": "system",
-            "content": "You are an intelligent database that predicts the columns of a SQL-insert. "
-            "The inserts can contain abbreviated or synonymous column names. The column names can also be missing entirely. "
+            "content": "You are an intelligent database that predicts on which table a SQL-insert should be executed. "
+            "The inserts can contain abbreviated or synonymous names. The table and column names can be missing entirely. "
             "Base your guess on the available information. "
-            "If there is a suitable column in the table answer its name. Else, predict a suitable name for a new column in this table. "
-            "Avoid answering with already predicted columns. "
-            "Answer only with the name of the column. Don't give any explanation for your result.",
+            "If there is a suitable table in the database answer its name. Else, predict a suitable name for a new database table. "
+            "Answer only with the name of the table. Don't give any explanation for your result.",
         },
         {
             "role": "user",
-            "content": f"{data_point['Instruction']}\n" "Column:",
+            "content": f"{data_point['Instruction']}\n" "Table:",
         },
-        {"role": "assistant", "content": f"{data_point['Response'][8:]}"},
+        {"role": "assistant", "content": f"{data_point['Response'][7:]}"},
     ]
+
+    # Column prediction prompt (single column)
+    # return [
+    #     {
+    #         "role": "system",
+    #         "content": "You are an intelligent database that predicts the columns of a SQL-insert. "
+    #         "The inserts can contain abbreviated or synonymous column names. The column names can also be missing entirely. "
+    #         "Base your guess on the available information. "
+    #         "If there is a suitable column in the table answer its name. Else, predict a suitable name for a new column in this table. "
+    #         "Avoid answering with already predicted columns. "
+    #         "Answer only with the name of the column. Don't give any explanation for your result.",
+    #     },
+    #     {
+    #         "role": "user",
+    #         "content": f"{data_point['Instruction']}\n" "Column:",
+    #     },
+    #     {"role": "assistant", "content": f"{data_point['Response'][8:]}"},
+    # ]
 
     # Column prediction prompt (multiple columns)
     # return [
@@ -96,7 +96,6 @@ def generate_and_tokenize_prompt(data_point):
 # Load model and prepare for QLoRA
 bnb_config = BitsAndBytesConfig(
     load_in_4bit=True,
-    # load_4bit_use_double_quant=True,
     bnb_4bit_quant_type="nf4",
     bnb_4bit_compute_dtype=torch.bfloat16,
 )
