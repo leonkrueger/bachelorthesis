@@ -42,5 +42,10 @@ class LLMSynonymGenerator(SynonymGenerator):
             },
         ]
         synonyms = set([name])
-        synonyms.update(self.model.run_prompt(messages, 50).split(","))
+        synonyms.update(
+            [
+                synonym.strip().replace(" ", "_")
+                for synonym in self.model.run_prompt(messages, 50).split(",")
+            ]
+        )
         return synonyms
