@@ -13,6 +13,7 @@ from tqdm import tqdm
 load_env_variables()
 
 from system.databases.python_database import PythonDatabase
+from system.insert_handler import InsertHandler
 from system.strategies.heuristic.heuristic_strategy import (
     HeuristicStrategy,
     MatchingAlgorithm,
@@ -20,8 +21,6 @@ from system.strategies.heuristic.heuristic_strategy import (
 from system.strategies.heuristic.synonym_generator import WordnetSynonymGenerator
 from system.strategies.llama3.llama3_strategy import Llama3Strategy
 from system.strategies.openai.openai_strategy import OpenAIStrategy
-
-from bachelorthesis.system.insert_handler import InsertHandler
 
 database = PythonDatabase()
 
@@ -31,10 +30,15 @@ strategies = {
     #     get_finetuned_model_dir("missing_columns_12000_1_own"),
     #     2,
     # ),
+    "Llama3_finetuned_all_scenarios": Llama3Strategy(
+        get_finetuned_model_dir("missing_tables_12000_1_csv_columns_deleted"),
+        get_finetuned_model_dir("missing_columns_12000_1_own_data_collator"),
+        2,
+    ),
     # "Llama3_not_finetuned": Llama3Strategy(max_column_mapping_retries=2),
-    "GPT3_5": OpenAIStrategy(max_column_mapping_retries=1),
-    "GPT4o": OpenAIStrategy("gpt-4o-2024-05-13", 1),
-    "GPT4o_mini": OpenAIStrategy("gpt-4o-mini-2024-07-18", 1),
+    # "GPT3_5": OpenAIStrategy(max_column_mapping_retries=1),
+    # "GPT4o": OpenAIStrategy("gpt-4o-2024-05-13", 1),
+    # "GPT4o_mini": OpenAIStrategy("gpt-4o-mini-2024-07-18", 1),
     # "Heuristic_exact": HeuristicStrategy(MatchingAlgorithm.EXACT_MATCH),
     # "Heuristic_fuzzy": HeuristicStrategy(MatchingAlgorithm.FUZZY_MATCH),
     # "Heuristic_synonyms": HeuristicStrategy(
