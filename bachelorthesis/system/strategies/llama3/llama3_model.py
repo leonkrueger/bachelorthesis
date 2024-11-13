@@ -14,8 +14,12 @@ from ..large_language_model import LargeLanguageModel
 
 
 class Llama3Model(LargeLanguageModel):
-    def __init__(self, fine_tuned_model_dir: str = None) -> None:
-        self.model_name = "meta-llama/Meta-Llama-3-8B-Instruct"
+    def __init__(
+        self,
+        fine_tuned_model_dir: str = None,
+        model_name="meta-llama/Meta-Llama-3-8B-Instruct",
+    ) -> None:
+        self.model_name = model_name
 
         tokenizer = AutoTokenizer.from_pretrained(
             self.model_name, token=os.environ["HF_API_TOKEN"]

@@ -50,7 +50,9 @@ strategies = {
     # ),
     "Heuristic_synonyms_llama3": HeuristicStrategy(
         MatchingAlgorithm.FUZZY_MATCH_SYNONYMS,
-        LLMSynonymGenerator((llm := Llama3Model())),
+        LLMSynonymGenerator(
+            (llm := Llama3Model(model_name="meta-llama/Llama-3.2-1B-Instruct"))
+        ),
         llm,
     ),
 }
