@@ -40,11 +40,14 @@ class HeuristicStrategy(Strategy):
         self,
         matching_algorithm: MatchingAlgorithm,
         synonym_generator: SynonymGenerator = None,
+        large_language_model: LargeLanguageModel = None,
     ) -> None:
         super().__init__()
 
         self.matching_algorithm = matching_algorithm
-        self.name_predictor = NamePredictor(Llama3Model())
+        self.name_predictor = NamePredictor(
+            large_language_model if large_language_model else Llama3Model()
+        )
         self.synonym_generator = synonym_generator
 
     def predict_table_name(self, insert_data: InsertData) -> str:

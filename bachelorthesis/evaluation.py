@@ -18,7 +18,11 @@ from system.strategies.heuristic.heuristic_strategy import (
     HeuristicStrategy,
     MatchingAlgorithm,
 )
-from system.strategies.heuristic.synonym_generator import WordnetSynonymGenerator
+from system.strategies.heuristic.synonym_generator import (
+    LLMSynonymGenerator,
+    WordnetSynonymGenerator,
+)
+from system.strategies.llama3.llama3_model import Llama3Model
 from system.strategies.llama3.llama3_strategy import Llama3Strategy
 from system.strategies.openai.openai_strategy import OpenAIStrategy
 
@@ -30,11 +34,11 @@ strategies = {
     #     get_finetuned_model_dir("missing_columns_12000_1_own"),
     #     2,
     # ),
-    "Llama3_finetuned_all_scenarios": Llama3Strategy(
-        get_finetuned_model_dir("missing_tables_12000_1_csv_columns_deleted"),
-        get_finetuned_model_dir("missing_columns_12000_1_own_data_collator"),
-        2,
-    ),
+    # "Llama3_finetuned_all_scenarios": Llama3Strategy(
+    #     get_finetuned_model_dir("missing_tables_12000_1_csv_columns_deleted"),
+    #     get_finetuned_model_dir("missing_columns_12000_1_own_data_collator"),
+    #     2,
+    # ),
     # "Llama3_not_finetuned": Llama3Strategy(max_column_mapping_retries=2),
     # "GPT3_5": OpenAIStrategy(max_column_mapping_retries=1),
     # "GPT4o": OpenAIStrategy("gpt-4o-2024-05-13", 1),
@@ -44,6 +48,11 @@ strategies = {
     # "Heuristic_synonyms": HeuristicStrategy(
     #     MatchingAlgorithm.FUZZY_MATCH_SYNONYMS, WordnetSynonymGenerator()
     # ),
+    "Heuristic_synonyms_llama3": HeuristicStrategy(
+        MatchingAlgorithm.FUZZY_MATCH_SYNONYMS,
+        LLMSynonymGenerator((llm := Llama3Model())),
+        llm,
+    ),
 }
 
 # Switch if necessary
