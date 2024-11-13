@@ -33,12 +33,12 @@ class LLMSynonymGenerator(SynonymGenerator):
         messages = [
             {
                 "role": "system",
-                "content": "Generate 5 synonyms for the given name. Separate them with a comma. "
+                "content": "Generate 5 synonyms for the given database identifier. Separate them with a comma. "
                 "Answer only with the synonyms. Don't give any explanation for your result.",
             },
             {
                 "role": "user",
-                "content": f"Generate synonyms for {name}\n" "Synonyms:",
+                "content": f"Generate synonyms for '{name}'\n" "Synonyms:",
             },
         ]
         synonyms = set([name])
