@@ -133,6 +133,18 @@ def run_gold_standard(folder: str) -> None:
     logger.info(f"Gold Standard executed: {folder}")
 
 
+def load_database_schema_from_gold_standard(folder: str) -> None:
+    with open(
+        os.path.join(folder, "..", "gold_standard_input.sql"), encoding="utf-8"
+    ) as inserts_file:
+        inserts = inserts_file.read().split(";\n")
+
+    for insert in inserts:
+        insert = insert.strip()
+        if insert.startswith("CREATE TABLE"):
+            database.execute(insert)
+
+
 def run_experiment(folder: str) -> None:
     """Runs the inserts of one experiment"""
     for path in os.listdir(folder):
@@ -164,6 +176,10 @@ def run_experiment(folder: str) -> None:
                 insert = insert.strip()
                 if insert == "":
                     continue
+
+                if insert == "!PREDEFINED_DATABASE_SCHEMA":
+                    load_database_schema_from_gold_standard(folder)
+
                 try:
                     insert_handler.handle_insert(insert)
                 except Exception as e:
