@@ -14,6 +14,7 @@ class Llama3Strategy(Strategy):
         table_prediction_model_dir: str = None,
         column_mapping_model_dir: str = None,
         max_column_mapping_retries: int = 5,
+        use_model_explanations: bool = False,
     ) -> None:
         self.table_prediction_model = Llama3Model(table_prediction_model_dir)
         self.column_mapping_model = (
@@ -24,6 +25,19 @@ class Llama3Strategy(Strategy):
         self.logger = logging.getLogger(__name__)
 
         self.max_column_mapping_retries = max_column_mapping_retries
+        self.use_model_explanations = use_model_explanations
+
+    def extract_prediction_from_explanation(self, output: str) -> str:
+        if last_match := re.findall(
+            r"(?:\"|`|\'|\*\*)([A-Za-z0-9_$]+)(?:\"|`|\'|\*\*)",
+            output,
+        ):
+            return last_match[-1]
+        if last_match := re.findall(r":\s*([A-Za-z0-9_$]+)", output):
+            return last_match[-1]
+        if last_match := re.findall(r"([A-Za-z0-9_$]+)", output):
+            return last_match[-1]
+        return "incorrect_table_prediction"
 
     def predict_table_name(self, insert_data: InsertData) -> str:
         database_string = (
@@ -44,28 +58,34 @@ class Llama3Strategy(Strategy):
             else "No table exists yet."
         )
 
-        return re.search(
-            r"(?P<table>\S+)",
-            self.table_prediction_model.run_prompt(
-                [
-                    {
-                        "role": "system",
-                        "content": "You are an intelligent database that predicts on which table a SQL-insert should be executed. "
-                        "The inserts can contain abbreviated or synonymous names. The table and column names can be missing entirely. "
-                        "Base your guess on the available information. "
-                        "If there is a suitable table in the database answer its name. Else, predict a suitable name for a new database table. "
-                        "Answer only with the name of the table. Don't give any explanation for your result.",
-                    },
-                    {
-                        "role": "user",
-                        "content": "Predict the table for this example:\n"
-                        f"Query: {insert_data.get_insert(use_quotes=False)}\n"
-                        f"Database State:\n{database_string}\n"
-                        "Table:",
-                    },
-                ]
-            ),
-        ).group("table")
+        output = self.table_prediction_model.run_prompt(
+            [
+                {
+                    "role": "system",
+                    "content": "You are an intelligent database that predicts on which table a SQL-insert should be executed. "
+                    "The inserts can contain abbreviated or synonymous names. The table and column names can be missing entirely. "
+                    "Base your guess on the available information. "
+                    "If there is a suitable table in the database answer its name. Else, predict a suitable name for a new database table. "
+                    + (
+                        "Explain your answer. Include your final answer in the last sentence."
+                        if self.use_model_explanations
+                        else "Answer only with the name of the table. Don't give any explanation for your result."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": "Predict the table for this example:\n"
+                    f"Query: {insert_data.get_insert(use_quotes=False)}\n"
+                    f"Database State:\n{database_string}\n"
+                    + ("" if self.use_model_explanations else "Table:"),
+                },
+            ]
+        )
+
+        if self.use_model_explanations:
+            return self.extract_prediction_from_explanation(output)
+        else:
+            return re.search(r"(?P<table>\S+)", output).group("table")
 
     def predict_column_mapping(self, insert_data: InsertData) -> List[str]:
         predicted_columns = []
@@ -96,30 +116,36 @@ class Llama3Strategy(Strategy):
             # If not one generated name fits, the last prediction is used and an integer is added to its end
             was_added = False
             for i in range(self.max_column_mapping_retries):
-                prediction = re.search(
-                    r"(?P<column>\S+)",
-                    self.column_mapping_model.run_prompt(
-                        [
-                            {
-                                "role": "system",
-                                "content": "You are an intelligent database that predicts the columns of a SQL-insert. "
-                                "The inserts can contain abbreviated or synonymous column names. The column names can also be missing entirely. "
-                                "Base your guess on the available information. "
-                                "If there is a suitable column in the table answer its name. Else, predict a suitable name for a new column in this table. "
-                                "Answer only with the name of the column. Don't give any explanation for your result.",
-                            },
-                            {
-                                "role": "user",
-                                "content": "Predict the column for this value:\n"
-                                f"Query: {insert_data.get_insert(use_quotes=False)}\n"
-                                f"Specified column: {insert_column}\n"
-                                f"Value: {insert_value}\n"
-                                f"{table_string}\n"
-                                "Column:",
-                            },
-                        ],
-                    ),
-                ).group("column")
+                output = self.column_mapping_model.run_prompt(
+                    [
+                        {
+                            "role": "system",
+                            "content": "You are an intelligent database that predicts the columns of a SQL-insert. "
+                            "The inserts can contain abbreviated or synonymous column names. The column names can also be missing entirely. "
+                            "Base your guess on the available information. "
+                            "If there is a suitable column in the table answer its name. Else, predict a suitable name for a new column in this table. "
+                            + (
+                                "Explain your answer. Include your final answer in the last sentence."
+                                if self.use_model_explanations
+                                else "Answer only with the name of the column. Don't give any explanation for your result."
+                            ),
+                        },
+                        {
+                            "role": "user",
+                            "content": "Predict the column for this value:\n"
+                            f"Query: {insert_data.get_insert(use_quotes=False)}\n"
+                            f"Specified column: {insert_column}\n"
+                            f"Value: {insert_value}\n"
+                            f"{table_string}\n"
+                            + ("" if self.use_model_explanations else "Column:"),
+                        },
+                    ],
+                )
+
+                if self.use_model_explanations:
+                    prediction = self.extract_prediction_from_explanation(output)
+                else:
+                    prediction = re.search(r"(?P<column>\S+)", output).group("column")
 
                 if prediction not in predicted_columns:
                     predicted_columns.append(prediction)

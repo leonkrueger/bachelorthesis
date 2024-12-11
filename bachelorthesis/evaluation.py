@@ -39,7 +39,9 @@ strategies = {
     #     get_finetuned_model_dir("missing_columns_12000_1_own_data_collator"),
     #     2,
     # ),
-    # "Llama3_not_finetuned": Llama3Strategy(max_column_mapping_retries=2),
+    "Llama3_not_finetuned_explanation": Llama3Strategy(
+        max_column_mapping_retries=2, use_model_explanations=True
+    ),
     # "GPT3_5": OpenAIStrategy(max_column_mapping_retries=1),
     # "GPT4o": OpenAIStrategy("gpt-4o-2024-05-13", 1),
     # "GPT4o_mini": OpenAIStrategy("gpt-4o-mini-2024-07-18", 1),
@@ -48,13 +50,13 @@ strategies = {
     # "Heuristic_synonyms": HeuristicStrategy(
     #     MatchingAlgorithm.FUZZY_MATCH_SYNONYMS, WordnetSynonymGenerator()
     # ),
-    "Heuristic_synonyms_llama3": HeuristicStrategy(
-        MatchingAlgorithm.FUZZY_MATCH_SYNONYMS,
-        LLMSynonymGenerator(
-            (llm := Llama3Model(model_name="meta-llama/Llama-3.2-1B-Instruct"))
-        ),
-        llm,
-    ),
+    # "Heuristic_synonyms_llama3": HeuristicStrategy(
+    #     MatchingAlgorithm.FUZZY_MATCH_SYNONYMS,
+    #     LLMSynonymGenerator(
+    #         (llm := Llama3Model(model_name="meta-llama/Llama-3.2-1B-Instruct"))
+    #     ),
+    #     llm,
+    # ),
 }
 
 # Switch if necessary
