@@ -11,15 +11,17 @@ from system.strategies.llama3.llama3_model import Llama3Model
 from tqdm import tqdm
 
 synonym_generation_data_path = (
-    Path(__file__).resolve().parent
-    / os.environ["EVALUATION_BASE_DIR"]
+    Path(__file__)
+    .resolve()
+    .parent.joinpath(*os.environ["EVALUATION_BASE_DIR"].split("/"))
     / "fine_tuning"
     / "column_synonym_generation_data.json"
 )
 
 synonyms_path = (
-    Path(__file__).resolve().parent
-    / os.environ["EVALUATION_BASE_DIR"]
+    Path(__file__)
+    .resolve()
+    .parent.joinpath(*os.environ["EVALUATION_BASE_DIR"].split("/"))
     / "fine_tuning"
     / "column_synonyms.json"
 )

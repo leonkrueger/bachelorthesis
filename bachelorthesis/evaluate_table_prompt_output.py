@@ -2,9 +2,10 @@ import copy
 import json
 import os
 import re
+from pathlib import Path
 from typing import Any, Dict, List
 
-from system.utils.utils import load_env_variables
+from system.utils.utils import get_finetuned_model_dir, load_env_variables
 
 load_env_variables()
 
@@ -19,25 +20,18 @@ evaluation_input_files = [
     "table_in_database",
     "different_name_in_database",
 ]
-evaluation_folder = os.path.join("further_evaluation", "error_cases_missing_tables")
+evaluation_folder = Path("further_evaluation", "error_cases_missing_tables")
 different_name_already_generated = True
 
-evaluation_base_folder = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)),
-    "..",
-    *os.environ["EVALUATION_BASE_DIR"].split("/"),
+evaluation_base_folder = (
+    Path(__file__)
+    .resolve()
+    .parent.joinpath(*os.environ["EVALUATION_BASE_DIR"].split("/"))
 )
-evaluation_folder = os.path.join(evaluation_base_folder, evaluation_folder)
+evaluation_folder = evaluation_base_folder / evaluation_folder
 
 # Create model
-model = Llama3Model(
-    os.path.join(
-        os.path.dirname(os.path.realpath(__file__)),
-        "fine_tuning",
-        "output",
-        fine_tuned_model_folder,
-    )
-)
+model = Llama3Model(get_finetuned_model_dir(fine_tuned_model_folder))
 
 
 def generate_prompt(data_point):
@@ -133,26 +127,27 @@ def run_experiments_for_strategy(
     return result_points
 
 
-for evaluation_input_file in tqdm(evaluation_input_files):
-    with open(
-        os.path.join(evaluation_folder, evaluation_input_file + ".json"),
-        encoding="utf-8",
-    ) as evaluation_file:
-        evaluation_input = json.load(evaluation_file)
+if __name__ == "__main__":
+    for evaluation_input_file in tqdm(evaluation_input_files):
+        with open(
+            evaluation_folder / (evaluation_input_file + ".json"),
+            encoding="utf-8",
+        ) as evaluation_file:
+            evaluation_input = json.load(evaluation_file)
 
-    output_folder = os.path.join(evaluation_folder, strategy_name)
-    os.makedirs(output_folder, exist_ok=True)
-    output_file_path = os.path.join(
-        output_folder, "results_" + evaluation_input_file + ".json"
-    )
+        output_folder = evaluation_folder / strategy_name
+        os.makedirs(output_folder, exist_ok=True)
+        output_file_path = output_folder / (
+            "results_" + evaluation_input_file + ".json"
+        )
 
-    # Continue if experiment was already run
-    if os.path.exists(output_file_path):
-        with open(output_file_path, encoding="utf-8") as results_file:
-            if results_file.read().strip() != "":
-                continue
+        # Continue if experiment was already run
+        if os.path.exists(output_file_path):
+            with open(output_file_path, encoding="utf-8") as results_file:
+                if results_file.read().strip() != "":
+                    continue
 
-    results = run_experiments_for_strategy(evaluation_input)
+        results = run_experiments_for_strategy(evaluation_input)
 
-    with open(output_file_path, mode="w", encoding="utf-8") as output_file:
-        json.dump(results, output_file)
+        with open(output_file_path, mode="w", encoding="utf-8") as output_file:
+            json.dump(results, output_file)
