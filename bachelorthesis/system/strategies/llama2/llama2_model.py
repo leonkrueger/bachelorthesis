@@ -27,7 +27,7 @@ class LLama2Model(Strategy):
     def __init__(
         self,
         model_type: LLama2ModelType = LLama2ModelType.NON_FINE_TUNED_LOCAL,
-        fine_tuned_model_dir: str = None,
+        fine_tuned_model_dir: str | os.PathLike = None,
     ) -> None:
         self.model_name = "meta-llama/Llama-2-7b-hf"
         self.model_type = model_type

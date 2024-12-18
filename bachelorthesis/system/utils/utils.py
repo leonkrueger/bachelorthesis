@@ -6,11 +6,7 @@ from pathlib import Path
 def load_env_variables() -> None:
     """Loads the environment variables stored in the .env file.
     File needs to be in the top folder of the project."""
-    with open(
-        os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", ".env"
-        )
-    ) as env_file:
+    with open(Path(__file__).resolve().parents[3] / ".env") as env_file:
         for line in env_file.readlines():
             if line.startswith("#") or not line.strip():
                 continue
@@ -27,13 +23,11 @@ def configure_logger(logging_file: str) -> None:
         encoding="utf-8",
     )
 
-def get_finetuned_model_dir(name: str) -> str:
+
+def get_finetuned_model_dir(name: str) -> os.PathLike:
     """Returns the path of the finetuned model in this project"""
-    return os.path.join(
-        Path(os.path.realpath(__file__)).parent.parent.parent,
-        "fine_tuning",
-        "output",
-        name,
+    return (
+        Path(__file__).resolve().parents[3] / os.environ["FINETUNED_MODELS_DIR"] / name
     )
 
 

@@ -1,4 +1,5 @@
 import os
+from pathlib import PosixPath
 from typing import Dict, List
 
 import torch
@@ -16,7 +17,7 @@ from ..large_language_model import LargeLanguageModel
 class Llama3Model(LargeLanguageModel):
     def __init__(
         self,
-        fine_tuned_model_dir: str = None,
+        fine_tuned_model_dir: str | os.PathLike = None,
         model_name="meta-llama/Meta-Llama-3-8B-Instruct",
     ) -> None:
         self.model_name = model_name

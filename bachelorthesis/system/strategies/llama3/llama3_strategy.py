@@ -1,7 +1,8 @@
 import logging
 import re
 from copy import deepcopy
-from typing import Dict, List
+from os import PathLike
+from typing import List
 
 from ...data.insert_data import InsertData
 from ..strategy import Strategy
@@ -11,8 +12,8 @@ from .llama3_model import Llama3Model
 class Llama3Strategy(Strategy):
     def __init__(
         self,
-        table_prediction_model_dir: str = None,
-        column_mapping_model_dir: str = None,
+        table_prediction_model_dir: str | PathLike = None,
+        column_mapping_model_dir: str | PathLike = None,
         max_column_mapping_retries: int = 5,
         use_model_explanations: bool = False,
     ) -> None:
