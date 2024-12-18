@@ -142,7 +142,7 @@ if __name__ == "__main__":
         )
 
         # Continue if experiment was already run
-        if os.path.exists(output_file_path):
+        if output_file_path.exists():
             with open(output_file_path, encoding="utf-8") as results_file:
                 if results_file.read().strip() != "":
                     continue

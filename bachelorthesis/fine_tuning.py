@@ -2,8 +2,9 @@
 # https://medium.com/@ogbanugot/notes-on-fine-tuning-llama-2-using-qlora-a-detailed-breakdown-370be42ccca1
 
 import os
+from pathlib import Path
 
-from system.utils.utils import load_env_variables
+from system.utils.utils import get_finetuned_model_dir, load_env_variables
 
 load_env_variables()
 
@@ -29,8 +30,6 @@ output_dir = "missing_tables_12000_1_csv_columns_deleted"
 wandb_run_name = "12000_queries_1_epochs_csv_columns_deleted"
 
 os.environ["WANDB_PROJECT"] = "bachelorthesis_missing_tables"
-wandb.login()
-wandb.init(name=wandb_run_name)
 
 
 def generate_prompt(data_point):
@@ -93,106 +92,104 @@ def generate_and_tokenize_prompt(data_point):
     return tokenizer.apply_chat_template(full_prompt, truncation=True, return_dict=True)
 
 
-# Load model and prepare for QLoRA
-bnb_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_quant_type="nf4",
-    bnb_4bit_compute_dtype=torch.bfloat16,
-)
-model = AutoModelForCausalLM.from_pretrained(
-    model_id,
-    device_map="auto",
-    trust_remote_code=True,
-    quantization_config=bnb_config,
-    token=os.environ["HF_API_TOKEN"],
-)
-model = prepare_model_for_kbit_training(model)
+if __name__ == "__main__":
+    wandb.login()
+    wandb.init(name=wandb_run_name)
 
-# Load tokenizer
-tokenizer = AutoTokenizer.from_pretrained(model_id, token=os.environ["HF_API_TOKEN"])
-tokenizer.pad_token = tokenizer.eos_token
+    # Load model and prepare for QLoRA
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_compute_dtype=torch.bfloat16,
+    )
+    model = AutoModelForCausalLM.from_pretrained(
+        model_id,
+        device_map="auto",
+        trust_remote_code=True,
+        quantization_config=bnb_config,
+        token=os.environ["HF_API_TOKEN"],
+    )
+    model = prepare_model_for_kbit_training(model)
 
-# Configure LoRA
-config = LoraConfig(
-    r=16,
-    lora_alpha=32,
-    lora_dropout=0.05,
-    bias="none",
-    task_type="CAUSAL_LM",
-)
-model = get_peft_model(model, config)
+    # Load tokenizer
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_id, token=os.environ["HF_API_TOKEN"]
+    )
+    tokenizer.pad_token = tokenizer.eos_token
 
-# Create train dataset
-train_dataset_name = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)),
-    "..",
-    "..",
-    "evaluation",
-    "bachelorthesis",
-    "fine_tuning",
-    "datasets",
-    f"{train_input_file}.json",
-)
-train_dataset = load_dataset("json", data_files=train_dataset_name, split="train")
-train_dataset = train_dataset.shuffle().map(generate_and_tokenize_prompt)
+    # Configure LoRA
+    config = LoraConfig(
+        r=16,
+        lora_alpha=32,
+        lora_dropout=0.05,
+        bias="none",
+        task_type="CAUSAL_LM",
+    )
+    model = get_peft_model(model, config)
 
-# Create validation dataset
-validation_dataset_name = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)),
-    "..",
-    "..",
-    "evaluation",
-    "bachelorthesis",
-    "fine_tuning",
-    "validation_datasets",
-    f"{validation_input_file}.json",
-)
-validation_dataset = load_dataset(
-    "json", data_files=validation_dataset_name, split="train"
-)
-validation_dataset = validation_dataset.shuffle().map(generate_and_tokenize_prompt)
+    # Create train dataset
+    train_dataset_name = (
+        Path(__file__)
+        .resolve()
+        .parent.joinpath(*os.environ["EVALUATION_BASE_DIR"].split("/"))
+        / "fine_tuning"
+        / "datasets"
+        / f"{train_input_file}.json"
+    )
+    train_dataset = load_dataset("json", data_files=train_dataset_name, split="train")
+    train_dataset = train_dataset.shuffle().map(generate_and_tokenize_prompt)
 
-output_dir = os.path.join(
-    os.path.dirname(os.path.realpath(__file__)), "fine_tuning", "output", output_dir
-)
-os.makedirs(output_dir, exist_ok=True)
+    # Create validation dataset
+    validation_dataset_name = (
+        Path(__file__)
+        .resolve()
+        .parent.joinpath(*os.environ["EVALUATION_BASE_DIR"].split("/"))
+        / "fine_tuning"
+        / "validation_datasets"
+        / f"{validation_input_file}.json"
+    )
+    validation_dataset = load_dataset(
+        "json", data_files=validation_dataset_name, split="train"
+    )
+    validation_dataset = validation_dataset.shuffle().map(generate_and_tokenize_prompt)
 
-# Configure training arguments
-training_args = transformers.TrainingArguments(
-    per_device_train_batch_size=1,
-    per_device_eval_batch_size=1,
-    gradient_accumulation_steps=64,
-    eval_accumulation_steps=8,
-    gradient_checkpointing=True,
-    optim="adamw_bnb_8bit",
-    num_train_epochs=1,
-    learning_rate=4e-4,
-    fp16=True,
-    logging_steps=1,
-    evaluation_strategy="steps",
-    eval_steps=10,
-    save_strategy="no",
-    output_dir=os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), "fine_tuning", "output", "steps"
-    ),
-    report_to="wandb",
-    run_name=wandb_run_name,
-)
+    output_dir = get_finetuned_model_dir(output_dir)
+    os.makedirs(output_dir, exist_ok=True)
 
-# Train model
-response_template = "assistant"
-trainer = transformers.Trainer(
-    model=model,
-    train_dataset=train_dataset,
-    eval_dataset=validation_dataset,
-    args=training_args,
-    data_collator=DataCollatorForCompletionOnlyLM(
-        response_template, tokenizer=tokenizer
-    ),
-)
-model.config.use_cache = False
+    # Configure training arguments
+    training_args = transformers.TrainingArguments(
+        per_device_train_batch_size=1,
+        per_device_eval_batch_size=1,
+        gradient_accumulation_steps=64,
+        eval_accumulation_steps=8,
+        gradient_checkpointing=True,
+        optim="adamw_bnb_8bit",
+        num_train_epochs=1,
+        learning_rate=4e-4,
+        fp16=True,
+        logging_steps=1,
+        evaluation_strategy="steps",
+        eval_steps=10,
+        save_strategy="no",
+        output_dir=get_finetuned_model_dir("steps"),
+        report_to="wandb",
+        run_name=wandb_run_name,
+    )
 
-trainer.train()
+    # Train model
+    response_template = "assistant"
+    trainer = transformers.Trainer(
+        model=model,
+        train_dataset=train_dataset,
+        eval_dataset=validation_dataset,
+        args=training_args,
+        data_collator=DataCollatorForCompletionOnlyLM(
+            response_template, tokenizer=tokenizer
+        ),
+    )
+    model.config.use_cache = False
 
-# Save model
-trainer.model.save_pretrained(output_dir)
+    trainer.train()
+
+    # Save model
+    trainer.model.save_pretrained(output_dir)
