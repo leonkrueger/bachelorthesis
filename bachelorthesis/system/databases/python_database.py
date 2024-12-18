@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 from ..create_table_parser import parse_create_table
 from ..data.insert_data import InsertData
@@ -17,18 +17,18 @@ class IncorrectInsertException(Exception):
 
 
 class insertDoesNotFitDatabaseException(Exception):
-    def __init__(self, insert: str, database_columns: List[str]):
+    def __init__(self, insert: str, database_columns: list[str]):
         self.insert = insert
         self.database_columns = database_columns
 
 
 class PythonDatabase(Database):
-    columns: Dict[str, List[Tuple[str, str]]] = {}
-    values: Dict[str, List[List[Any]]] = {}
+    columns: dict[str, list[tuple[str, str]]] = {}
+    values: dict[str, list[list[Any]]] = {}
 
     def execute(
-        self, statement: str, params: Tuple[str, ...] = ()
-    ) -> List[Tuple[Any, ...]]:
+        self, statement: str, params: tuple[str, ...] = ()
+    ) -> list[tuple[Any, ...]]:
         statement_upper = statement.upper()
         if statement_upper.startswith("INSERT INTO"):
             insert_data = InsertData(statement, {})
@@ -67,19 +67,19 @@ class PythonDatabase(Database):
         else:
             raise StatementNotSupportedException(statement)
 
-    def select_all_data(self, table_name: str) -> List[Tuple[Any, ...]]:
+    def select_all_data(self, table_name: str) -> list[tuple[Any, ...]]:
         return [tuple(row) for row in self.values[table_name]]
 
-    def get_all_tables(self) -> List[str]:
+    def get_all_tables(self) -> list[str]:
         return self.columns.keys()
 
-    def get_all_columns(self, table_name: str) -> List[Tuple[str, str]]:
+    def get_all_columns(self, table_name: str) -> list[tuple[str, str]]:
         return self.columns[table_name]
 
-    def get_example_rows(self, table_name: str) -> List[Tuple[Any, ...]]:
+    def get_example_rows(self, table_name: str) -> list[tuple[Any, ...]]:
         return [tuple(row) for row in self.values[table_name][:3]]
 
-    def get_database_state(self) -> Dict[str, Tuple[List[str], List[Tuple[Any, ...]]]]:
+    def get_database_state(self) -> dict[str, tuple[list[str], list[tuple[Any, ...]]]]:
         return {
             table: (
                 [column[0] for column in self.get_all_columns(table)],
@@ -89,7 +89,7 @@ class PythonDatabase(Database):
         }
 
     def create_table(
-        self, table_name: str, column_names: List[str], column_types: List[str]
+        self, table_name: str, column_names: list[str], column_types: list[str]
     ) -> None:
         self.columns[table_name] = list(zip(column_names, column_types))
         self.values[table_name] = []

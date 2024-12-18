@@ -2,7 +2,6 @@ import io
 import logging
 import re
 import tokenize
-from typing import List, Tuple
 
 from .data.insert_data import InsertData
 
@@ -12,8 +11,8 @@ class UnexpectedTokenException(Exception):
         self,
         expected_token: str,
         actual_token: str,
-        tokens: List[str],
-        context: List[str],
+        tokens: list[str],
+        context: list[str],
     ) -> None:
         self.expected_token = expected_token
         self.actual_token = actual_token
@@ -22,7 +21,7 @@ class UnexpectedTokenException(Exception):
 
 
 def unexpected_token_encountered(
-    tokens: List[str], expected_token: str, index: int
+    tokens: list[str], expected_token: str, index: int
 ) -> None:
     raise UnexpectedTokenException(
         expected_token, tokens[index], tokens, tokens[index - 2 : index + 3]
@@ -74,11 +73,11 @@ def parse_insert(insert_data: InsertData) -> InsertData:
     return insert_data
 
 
-def parse_table(tokens: List[str], index: int) -> Tuple[str, int]:
+def parse_table(tokens: list[str], index: int) -> tuple[str, int]:
     return parse_identifier(tokens, index)
 
 
-def parse_columns(tokens: List[str], index: int) -> Tuple[List[str], int]:
+def parse_columns(tokens: list[str], index: int) -> tuple[list[str], int]:
     if tokens[index] != "(":
         unexpected_token_encountered(tokens, "(", index)
 
@@ -93,7 +92,7 @@ def parse_columns(tokens: List[str], index: int) -> Tuple[List[str], int]:
     return (columns, index + 1)
 
 
-def parse_identifier(tokens: List[str], index: int) -> Tuple[str, int]:
+def parse_identifier(tokens: list[str], index: int) -> tuple[str, int]:
     if tokens[index] == "`":
         identifier = tokens[index + 1]
         index += 2
@@ -113,8 +112,8 @@ def parse_identifier(tokens: List[str], index: int) -> Tuple[str, int]:
 
 
 def parse_values(
-    tokens: List[str], index: int
-) -> Tuple[List[List[str]], List[str], int]:
+    tokens: list[str], index: int
+) -> tuple[list[list[str]], list[str], int]:
     values = []
     row_values, column_types, index = parse_values_for_row(tokens, index)
     values.append(row_values)
@@ -127,8 +126,8 @@ def parse_values(
 
 
 def parse_values_for_row(
-    tokens: List[str], index: int
-) -> Tuple[List[str], List[str], int]:
+    tokens: list[str], index: int
+) -> tuple[list[str], list[str], int]:
     if tokens[index] != "(":
         unexpected_token_encountered(tokens, "(", index)
 
@@ -149,7 +148,7 @@ def parse_values_for_row(
     return (values, column_types, index + 1)
 
 
-def parse_single_value(tokens: List[str], index: int) -> Tuple[str, str, int]:
+def parse_single_value(tokens: list[str], index: int) -> tuple[str, str, int]:
     # Replace call
     if tokens[index] == "replace":
         value, index = parse_replace_function(tokens, index + 1)
@@ -172,7 +171,7 @@ def parse_single_value(tokens: List[str], index: int) -> Tuple[str, str, int]:
     return (tokens[index], get_column_type(tokens[index]), index + 1)
 
 
-def parse_replace_function(tokens: List[str], index: int) -> Tuple[str, int]:
+def parse_replace_function(tokens: list[str], index: int) -> tuple[str, int]:
     if tokens[index] == "(":
         value, index = parse_replace_function_helper(tokens, index + 1, 1)
         return ("(" + value, index)
@@ -181,8 +180,8 @@ def parse_replace_function(tokens: List[str], index: int) -> Tuple[str, int]:
 
 
 def parse_replace_function_helper(
-    tokens: List[str], index: int, open_parentheses: int
-) -> Tuple[str, int]:
+    tokens: list[str], index: int, open_parentheses: int
+) -> tuple[str, int]:
     if open_parentheses == 0:
         return ("", index)
 

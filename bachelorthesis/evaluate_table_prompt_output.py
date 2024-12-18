@@ -3,7 +3,7 @@ import json
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 from system.utils.utils import get_finetuned_model_dir, load_env_variables
 
@@ -70,8 +70,8 @@ def generate_prompt(data_point):
 
 
 def run_experiments_for_strategy(
-    evaluation_input: List[Dict[str, Any]]
-) -> List[Dict[str, Any]]:
+    evaluation_input: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
     result_points = []
     for data_point in tqdm(evaluation_input):
         if (

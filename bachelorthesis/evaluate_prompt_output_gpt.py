@@ -2,7 +2,7 @@ import json
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 from system.utils.utils import load_env_variables
 
@@ -30,7 +30,7 @@ evaluation_folder = evaluation_base_folder / evaluation_folder
 max_tokens = 30
 
 
-def generate_request(data_point) -> List[Dict[str, Any]]:
+def generate_request(data_point) -> list[dict[str, Any]]:
     return {
         "model": model,
         "messages": [
@@ -62,8 +62,8 @@ def extract_answer(response) -> str:
 
 
 def run_experiments_for_strategy(
-    evaluation_input: List[Dict[str, Any]]
-) -> List[Dict[str, Any]]:
+    evaluation_input: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
     result_points = []
 
     requests = [generate_request(data_point) for data_point in evaluation_input]

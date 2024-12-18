@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Any, Dict, List, Tuple
 
 from thefuzz import fuzz, process
 
@@ -34,7 +33,7 @@ class HeuristicStrategy(Strategy):
 
     # Is filled when the table name is predicted and resetted after the last prediction step for a insert
     # First value is the name of the table, second is the column mapping
-    saved_column_mapping: Tuple[str, List[str]] = None
+    saved_column_mapping: tuple[str, list[str]] = None
 
     def __init__(
         self,
@@ -82,7 +81,7 @@ class HeuristicStrategy(Strategy):
                 # If no match was found, predict a new table name
                 return self.name_predictor.predict_table_name(insert_data)
 
-    def predict_column_mapping(self, insert_data: InsertData) -> List[str]:
+    def predict_column_mapping(self, insert_data: InsertData) -> list[str]:
         # If we already computed the table mapping in the table name prediction step, we use this
         if (
             self.saved_column_mapping
@@ -125,7 +124,7 @@ class HeuristicStrategy(Strategy):
 
     def get_column_mapping_for_best_table(
         self, insert_data: InsertData
-    ) -> Tuple[str, Dict[str, str]]:
+    ) -> tuple[str, dict[str, str]]:
         """Computes the table with the best ratio of mapped columns.
         Returns the name of the table, the column mapping and the ratio of mapped columns.
         """
@@ -168,7 +167,7 @@ class HeuristicStrategy(Strategy):
 
     def get_column_mapping_for_table(
         self, insert_columns: list[str], table_columns: list[str]
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """Computes a mapping of insert_columns to table_columns."""
         column_mapping = []
 

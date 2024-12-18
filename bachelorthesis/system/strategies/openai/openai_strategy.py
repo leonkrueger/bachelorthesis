@@ -1,7 +1,6 @@
 import logging
-import re
 from copy import deepcopy
-from typing import Any, Dict, List
+from typing import Any
 
 from ...data.insert_data import InsertData
 from ..strategy import Strategy
@@ -23,7 +22,7 @@ class OpenAIStrategy(Strategy):
 
     def generate_table_prediction_request(
         self, insert_data: InsertData
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         database_string = (
             "\n".join(
                 [
@@ -78,9 +77,9 @@ class OpenAIStrategy(Strategy):
         insert_data: InsertData,
         insert_value: str,
         insert_column: str,
-        db_columns: List[str],
-        db_values: List[str],
-    ) -> Dict[str, Any]:
+        db_columns: list[str],
+        db_values: list[str],
+    ) -> dict[str, Any]:
         table_string = f"Table {insert_data.table}:\n" + "\n".join(
             [
                 f"Column {db_column}, Example values: [{', '.join([str(row[db_column_index]) for row in db_values if row[db_column_index] is not None])}]"
@@ -116,7 +115,7 @@ class OpenAIStrategy(Strategy):
             "max_tokens": self.max_tokens,
         }
 
-    def predict_column_mapping(self, insert_data: InsertData) -> List[str]:
+    def predict_column_mapping(self, insert_data: InsertData) -> list[str]:
         predicted_columns = []
 
         if insert_data.table in insert_data.database_state.keys():

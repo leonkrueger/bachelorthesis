@@ -1,4 +1,4 @@
-from typing import Any, List, Tuple
+from typing import Any
 
 from .data.insert_data import InsertData
 from .databases.database import Database
@@ -11,7 +11,7 @@ class InsertHandler:
         self.database = database
         self.strategy = strategy
 
-    def handle_insert(self, insert: str) -> List[Tuple[Any, ...]]:
+    def handle_insert(self, insert: str) -> list[tuple[Any, ...]]:
         """Collects all required information for the execution of the insert and executes it on the database"""
 
         # Parse the insert of the user and collect information needed for execution

@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 from system.utils.utils import get_finetuned_model_dir, load_env_variables
 
@@ -112,7 +112,7 @@ def is_usable_value(value: str | Any) -> bool:
 
 def get_table_state_from_str(
     table_state: str,
-) -> Tuple[str, List[str], List[List[str]]]:
+) -> tuple[str, list[str], list[list[str]]]:
     rows = table_state.split("\n")
     table = rows[0][6:-1]
     columns = rows[1].split(";")
@@ -125,7 +125,7 @@ def get_table_state_from_str(
 
 
 def get_table_state_str(
-    table_name: str, columns: List[str], values: List[List[str]]
+    table_name: str, columns: list[str], values: list[list[str]]
 ) -> str:
     # return f"Table {table_name}:\n{';'.join(columns)}\n" + "\n".join(
     #     [";".join(row) for row in values]
@@ -139,8 +139,8 @@ def get_table_state_str(
 
 
 def run_experiments_for_strategy(
-    evaluation_input: List[Dict[str, Any]]
-) -> List[Dict[str, Any]]:
+    evaluation_input: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
     result_points = []
     for data_point in tqdm(evaluation_input):
         insert_data = parse_insert(InsertData(data_point["query"], None))

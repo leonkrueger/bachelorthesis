@@ -2,7 +2,6 @@ import logging
 import re
 from copy import deepcopy
 from os import PathLike
-from typing import List
 
 from ...data.insert_data import InsertData
 from ..strategy import Strategy
@@ -88,7 +87,7 @@ class Llama3Strategy(Strategy):
         else:
             return re.search(r"(?P<table>\S+)", output).group("table")
 
-    def predict_column_mapping(self, insert_data: InsertData) -> List[str]:
+    def predict_column_mapping(self, insert_data: InsertData) -> list[str]:
         predicted_columns = []
 
         if insert_data.table in insert_data.database_state.keys():

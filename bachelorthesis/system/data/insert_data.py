@@ -1,21 +1,21 @@
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any
 
 
 class InsertData:
     insert: str
-    database_state: Dict[str, Tuple[List[str], List[Tuple[Any, ...]]]]
+    database_state: dict[str, tuple[list[str], list[tuple[Any, ...]]]]
 
-    table: Union[str, None] = None
+    table: str | None = None
 
-    columns: Union[List[str], None] = None
-    column_types: Union[List[str], None] = None
+    columns: list[str] | None = None
+    column_types: list[str] | None = None
 
-    values: Union[List[List[str]], None] = None
+    values: list[list[str]] | None = None
 
     def __init__(
         self,
         insert: str,
-        database_state: Dict[str, Tuple[List[str], List[Tuple[Any, ...]]]],
+        database_state: dict[str, tuple[list[str], list[tuple[Any, ...]]]],
     ):
         self.insert = insert
         self.database_state = database_state

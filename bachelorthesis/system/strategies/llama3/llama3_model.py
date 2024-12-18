@@ -1,6 +1,4 @@
 import os
-from pathlib import PosixPath
-from typing import Dict, List
 
 import torch
 from peft import PeftConfig, PeftModel
@@ -57,7 +55,7 @@ class Llama3Model(LargeLanguageModel):
         )
 
     def run_prompt(
-        self, messages: List[Dict[str, str]], max_new_tokens: int = 30
+        self, messages: list[dict[str, str]], max_new_tokens: int = 30
     ) -> str:
         prompt = self.pipe.tokenizer.apply_chat_template(
             messages, tokenize=False, add_generation_prompt=True
