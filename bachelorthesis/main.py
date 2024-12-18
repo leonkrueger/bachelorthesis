@@ -1,3 +1,10 @@
+"""
+Manual test script for the system.
+
+Pass the strategy as an argument when executing the script.
+Possible: heuristic_exact, heuristic_fuzzy, heuristic_synonyms, llama3_finetuned, llama3_not_finetuned, gpt
+"""
+
 import sys
 import traceback
 
@@ -31,8 +38,8 @@ if __name__ == "__main__":
             )
         case "llama3_finetuned":
             strategy = Llama3Strategy(
-                get_finetuned_model_dir("missing_tables_12000_1_csv"),
-                get_finetuned_model_dir("missing_columns_12000_1_own"),
+                get_finetuned_model_dir("missing_tables_12000_1_csv_data_collator"),
+                get_finetuned_model_dir("missing_columns_12000_1_own_data_collator"),
             )
         case "llama3_not_finetuned":
             strategy = Llama3Strategy()

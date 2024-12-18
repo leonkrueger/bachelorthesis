@@ -1,5 +1,12 @@
-# https://medium.com/@amodwrites/a-definitive-guide-to-qlora-fine-tuning-falcon-7b-with-peft-78f500a1f337
-# https://medium.com/@ogbanugot/notes-on-fine-tuning-llama-2-using-qlora-a-detailed-breakdown-370be42ccca1
+"""
+Fine-tuning script.
+
+``model_id`` specifies huggingface model if that should be fine-tuned
+``train_input_file`` specifies the exact training input file
+``validation_input_file`` specifies the exact validation input file
+``output_dir`` specifies the output file of the fine-tuned model
+``wandb_run_name`` only applicable, if wandb is used. Otherwise comment out wandb parts.
+"""
 
 import os
 from pathlib import Path

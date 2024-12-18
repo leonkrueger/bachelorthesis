@@ -1,3 +1,14 @@
+"""
+Evaluate individual prompt outputs for the table prediction task by a (fine-tuned) LLM.
+
+Stores the results in {evaluation_base_folder}/{evaluation_folder}/{strategy_name}
+
+``fine_tuned_model_folder`` specifies the name of the fine-tuned model
+``evaluation_input_files`` contain the input for this evaluation (need to be in {evaluation_base_folder}/{evaluation_folder})
+``different_name_already_generated`` specifies if synonyms need to be created (should only be true for older input files)
+``model`` specifies the LLM that is used
+"""
+
 import copy
 import json
 import os
@@ -13,14 +24,14 @@ from system.strategies.llama3.llama3_model import Llama3Model
 from tqdm import tqdm
 
 # Switch if necessary
-strategy_name = "missing_tables_1500"
-fine_tuned_model_folder = "missing_tables_1500_1"
+strategy_name = "missing_tables_12000_csv_data_collator"
+fine_tuned_model_folder = "missing_tables_12000_1_csv_data_collator"
 evaluation_input_files = [
     "table_not_in_database",
     "table_in_database",
     "different_name_in_database",
 ]
-evaluation_folder = Path("further_evaluation", "error_cases_missing_tables")
+evaluation_folder = Path("further_evaluation", "error_cases_missing_tables_csv")
 different_name_already_generated = True
 
 evaluation_base_folder = (

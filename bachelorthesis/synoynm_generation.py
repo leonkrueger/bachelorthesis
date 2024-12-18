@@ -1,3 +1,11 @@
+"""
+Generates the synonyms used in the bachelorthesis_evaluation repository.
+
+``synonym_generation_data_path`` specifies the data needed to generate the synoyms
+``synonyms_path`` specifies the file where the synoynms should be stored
+``model`` specifies the model that generates the synonyms
+"""
+
 import json
 import os
 from collections import defaultdict

@@ -1,3 +1,14 @@
+"""
+Evaluate individual prompt outputs for the column mapping task by a (fine-tuned) LLM.
+
+Stores the results in {evaluation_base_folder}/{evaluation_folder}/{strategy_name}
+
+``fine_tuned_model_folder`` specifies the name of the fine-tuned model
+``evaluation_input_files`` contain the input for this evaluation (need to be in {evaluation_base_folder}/{evaluation_folder})
+``max_new_tokens`` specifies the number of tokens each output can contain
+``model`` specifies the LLM that is used
+"""
+
 import json
 import os
 from pathlib import Path
@@ -13,8 +24,10 @@ from system.strategies.llama3.llama3_model import Llama3Model
 from tqdm import tqdm
 
 # Switch if necessary
-strategy_name = "missing_columns_12000_own_predicted_removed_from_table_state"
-fine_tuned_model_folder = "missing_columns_12000_1_own"
+strategy_name = (
+    "missing_columns_12000_own_data_collator_predicted_removed_from_table_state"
+)
+fine_tuned_model_folder = "missing_columns_12000_1_own_data_collator"
 evaluation_input_files = [
     "evaluation_data",
     "evaluation_data_columns_deleted",
@@ -22,7 +35,6 @@ evaluation_input_files = [
 evaluation_folder = Path(
     "further_evaluation", "error_cases_missing_columns_combined_columns"
 )
-different_name_already_generated = True
 max_new_tokens = 30
 
 evaluation_base_folder = (
