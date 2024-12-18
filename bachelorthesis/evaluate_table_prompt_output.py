@@ -25,7 +25,7 @@ different_name_already_generated = True
 evaluation_base_folder = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
     "..",
-    *os.environ["EVALUATION_BASE_DIR_RELATIVE"].split("/"),
+    *os.environ["EVALUATION_BASE_DIR"].split("/"),
 )
 evaluation_folder = os.path.join(evaluation_base_folder, evaluation_folder)
 
